@@ -18,6 +18,7 @@ import { UploadModule } from './modules/upload/upload.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { EmergencyModule } from './modules/emergency/emergency.module';
+import { LivestreamModule } from './modules/livestream/livestream.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { EmergencyModule } from './modules/emergency/emergency.module';
     RealtimeModule,
     NotificationsModule,
     EmergencyModule,
+    LivestreamModule,
   ],
 })
 export class AppModule {}

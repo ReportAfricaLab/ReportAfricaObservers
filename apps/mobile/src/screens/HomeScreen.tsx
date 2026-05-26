@@ -79,6 +79,9 @@ export default function HomeScreen() {
             <Text style={styles.brandName}>{brandName}</Text>
             <Text style={styles.subtitle}>Live Reports</Text>
           </View>
+          <TouchableOpacity style={styles.liveBtn} onPress={() => navigation.navigate('GoLive')}>
+            <Text style={styles.liveBtnText}>● Live</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.createBtn} onPress={() => navigation.navigate('CreateReport')}>
             <Text style={styles.createBtnText}>+ Report</Text>
           </TouchableOpacity>
@@ -108,6 +111,8 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: theme.fontSize.sm, color: theme.colors.light.textSecondary, marginTop: 2 },
   createBtn: { backgroundColor: theme.colors.emergency, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
   createBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  liveBtn: { backgroundColor: '#000', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
+  liveBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   list: { padding: 16, gap: 12 },
   card: { backgroundColor: '#fff', borderRadius: theme.borderRadius.md, padding: 16, borderWidth: 1, borderColor: theme.colors.light.border },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
