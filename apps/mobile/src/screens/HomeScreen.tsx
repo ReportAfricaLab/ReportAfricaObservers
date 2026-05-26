@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAppStore } from '../store/useAppStore';
 import { reportsAPI } from '../services/api';
 import { theme } from '../theme';
@@ -21,6 +22,7 @@ interface Report {
 
 export default function HomeScreen() {
   const { country } = useAppStore();
+  const navigation = useNavigation<any>();
   const [reports, setReports] = useState<Report[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -53,7 +55,7 @@ export default function HomeScreen() {
   };
 
   const renderReport = ({ item }: { item: Report }) => (
-    <TouchableOpacity style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('ReportDetail', { id: item.id })}>
       <View style={styles.cardHeader}>
         <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(item.severity) }]}>
           <Text style={styles.severityText}>{item.severity.toUpperCase()}</Text>
