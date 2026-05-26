@@ -45,4 +45,15 @@ export const reportsAPI = {
   downvote: (id: string) => api.patch(`/reports/${id}/downvote`),
 };
 
+export const donationsAPI = {
+  campaignFeed: (country: string, page = 1) => api.get(`/donations/campaigns/feed?country=${country}&page=${page}`),
+  emergency: (country: string) => api.get(`/donations/campaigns/emergency?country=${country}`),
+  byCategory: (country: string, category: string, page = 1) => api.get(`/donations/campaigns/category/${category}?country=${country}&page=${page}`),
+  getById: (id: string) => api.get(`/donations/campaigns/${id}`),
+  getDonations: (id: string, page = 1) => api.get(`/donations/campaigns/${id}/donations?page=${page}`),
+  create: (data: any) => api.post('/donations/campaigns', data),
+  donate: (id: string, data: any) => api.post(`/donations/campaigns/${id}/donate`, data),
+  verify: (reference: string) => api.get(`/donations/verify/${reference}`),
+};
+
 export default api;

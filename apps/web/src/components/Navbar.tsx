@@ -14,6 +14,7 @@ export default function Navbar() {
 
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
           <Link href="/feed" className="hover:text-[#0F7B6C] transition">Feed</Link>
+          <Link href="/donations" className="hover:text-[#F97316] transition">Helping Hands</Link>
           <Link href="/map" className="hover:text-[#0F7B6C] transition">Map</Link>
         </nav>
 

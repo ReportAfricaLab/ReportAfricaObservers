@@ -37,4 +37,14 @@ export const api = {
     upvote: (token: string, id: string) => fetchAPI(`/reports/${id}/upvote`, { method: 'PATCH', token }),
     downvote: (token: string, id: string) => fetchAPI(`/reports/${id}/downvote`, { method: 'PATCH', token }),
   },
+  donations: {
+    campaignFeed: (country: string, page = 1) => fetchAPI(`/donations/campaigns/feed?country=${country}&page=${page}`),
+    emergency: (country: string) => fetchAPI(`/donations/campaigns/emergency?country=${country}`),
+    byCategory: (country: string, category: string, page = 1) => fetchAPI(`/donations/campaigns/category/${category}?country=${country}&page=${page}`),
+    getById: (id: string) => fetchAPI(`/donations/campaigns/${id}`),
+    getDonations: (id: string, page = 1) => fetchAPI(`/donations/campaigns/${id}/donations?page=${page}`),
+    create: (token: string, body: any) => fetchAPI('/donations/campaigns', { method: 'POST', body: JSON.stringify(body), token }),
+    donate: (token: string, id: string, body: any) => fetchAPI(`/donations/campaigns/${id}/donate`, { method: 'POST', body: JSON.stringify(body), token }),
+    verify: (reference: string) => fetchAPI(`/donations/verify/${reference}`),
+  },
 };
