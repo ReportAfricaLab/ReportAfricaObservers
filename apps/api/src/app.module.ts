@@ -14,6 +14,10 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { EarningsModule } from './modules/earnings/earnings.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { LocalizationModule } from './modules/localization/localization.module';
+import { UploadModule } from './modules/upload/upload.module';
+import { RealtimeModule } from './modules/realtime/realtime.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { EmergencyModule } from './modules/emergency/emergency.module';
 
 @Module({
   imports: [
@@ -45,6 +49,10 @@ import { LocalizationModule } from './modules/localization/localization.module';
     EarningsModule,
     AdminModule,
     LocalizationModule,
+    UploadModule,
+    RealtimeModule,
+    NotificationsModule,
+    EmergencyModule,
   ],
 })
 export class AppModule {}

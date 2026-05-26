@@ -74,8 +74,15 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.brandName}>{brandName}</Text>
-        <Text style={styles.subtitle}>Live Reports</Text>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.brandName}>{brandName}</Text>
+            <Text style={styles.subtitle}>Live Reports</Text>
+          </View>
+          <TouchableOpacity style={styles.createBtn} onPress={() => navigation.navigate('CreateReport')}>
+            <Text style={styles.createBtnText}>+ Report</Text>
+          </TouchableOpacity>
+        </View>
       </View>
       <FlatList
         data={reports}
@@ -96,8 +103,11 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.light.background },
   header: { paddingHorizontal: 16, paddingTop: 60, paddingBottom: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: theme.colors.light.border },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brandName: { fontSize: theme.fontSize.xl, fontWeight: '700', color: theme.colors.primary },
   subtitle: { fontSize: theme.fontSize.sm, color: theme.colors.light.textSecondary, marginTop: 2 },
+  createBtn: { backgroundColor: theme.colors.emergency, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
+  createBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   list: { padding: 16, gap: 12 },
   card: { backgroundColor: '#fff', borderRadius: theme.borderRadius.md, padding: 16, borderWidth: 1, borderColor: theme.colors.light.border },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },

@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text } from 'react-native';
 import HomeScreen from '../screens/HomeScreen';
 import MapScreen from '../screens/MapScreen';
-import CreateReportScreen from '../screens/CreateReportScreen';
+import SOSScreen from '../screens/SOSScreen';
 import DonationsScreen from '../screens/DonationsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { theme } from '../theme';
@@ -31,9 +31,9 @@ export default function MainTabs() {
         options={{ tabBarLabel: 'Map', tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>🗺️</Text> }}
       />
       <Tab.Screen
-        name="Report"
-        component={CreateReportScreen}
-        options={{ tabBarLabel: 'Report', tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>🔴</Text> }}
+        name="SOS"
+        component={SOSScreen}
+        options={{ tabBarLabel: 'SOS', tabBarIcon: ({ color }) => <Text style={{ fontSize: 22 }}>🚨</Text> }}
       />
       <Tab.Screen
         name="Donations"
