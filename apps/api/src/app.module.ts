@@ -13,6 +13,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { EarningsModule } from './modules/earnings/earnings.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { LocalizationModule } from './modules/localization/localization.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { AdminModule } from './modules/admin/admin.module';
     PaymentsModule,
     EarningsModule,
     AdminModule,
+    LocalizationModule,
   ],
 })
 export class AppModule {}

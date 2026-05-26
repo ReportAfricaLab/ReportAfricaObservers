@@ -5,6 +5,10 @@ export const COUNTRY_CONFIG: Record<string, { name: string; brandName: string; s
   ZA: { name: 'South Africa', brandName: 'ReportSA', subdomain: 'za' },
   UG: { name: 'Uganda', brandName: 'ReportUganda', subdomain: 'ug' },
   RW: { name: 'Rwanda', brandName: 'ReportRwanda', subdomain: 'rw' },
+  TZ: { name: 'Tanzania', brandName: 'ReportTanzania', subdomain: 'tz' },
+  ET: { name: 'Ethiopia', brandName: 'ReportEthiopia', subdomain: 'et' },
+  SN: { name: 'Senegal', brandName: 'ReportSenegal', subdomain: 'sn' },
+  CM: { name: 'Cameroon', brandName: 'ReportCameroon', subdomain: 'cm' },
 };
 
 export const REPORT_CATEGORY_LABELS: Record<string, string> = {
