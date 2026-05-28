@@ -1,0 +1,54 @@
+{
+  "family": "reportafrica-api",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/reportafrica-api-task-role",
+  "containerDefinitions": [
+    {
+      "name": "reportafrica-api",
+      "image": "ACCOUNT_ID.dkr.ecr.af-south-1.amazonaws.com/reportafrica-api:latest",
+      "portMappings": [
+        {
+          "containerPort": 3001,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "PORT", "value": "3001" }
+      ],
+      "secrets": [
+        { "name": "DATABASE_HOST", "valueFrom": "arn:aws:ssm:af-south-1:ACCOUNT_ID:parameter/reportafrica/prod/DATABASE_HOST" },
+        { "name": "DATABASE_NAME", "valueFrom": "arn:aws:ssm:af-south-1:ACCOUNT_ID:parameter/reportafrica/prod/DATABASE_NAME" },
+        { "name": "DATABASE_USER", "valueFrom": "arn:aws:ssm:af-south-1:ACCOUNT_ID:parameter/reportafrica/prod/DATABASE_USER" },
+        { "name": "DATABASE_PASSWORD", "valueFrom": "arn:aws:ssm:af-south-1:ACCOUNT_ID:parameter/reportafrica/prod/DATABASE_PASSWORD" },
+        { "name": "REDIS_HOST", "valueFrom": "arn:aws:ssm:af-south-1:ACCOUNT_ID:parameter/reportafrica/prod/REDIS_HOST" },
+        { "name": "JWT_SECRET", "valueFrom": "arn:aws:ssm:af-south-1:ACCOUNT_ID:parameter/reportafrica/prod/JWT_SECRET" },
+        { "name": "AWS_ACCESS_KEY_ID", "valueFrom": "arn:aws:ssm:af-south-1:ACCOUNT_ID:parameter/reportafrica/prod/AWS_ACCESS_KEY_ID" },
+        { "name": "AWS_SECRET_ACCESS_KEY", "valueFrom": "arn:aws:ssm:af-south-1:ACCOUNT_ID:parameter/reportafrica/prod/AWS_SECRET_ACCESS_KEY" },
+        { "name": "OPENAI_API_KEY", "valueFrom": "arn:aws:ssm:af-south-1:ACCOUNT_ID:parameter/reportafrica/prod/OPENAI_API_KEY" },
+        { "name": "PAYSTACK_SECRET_KEY", "valueFrom": "arn:aws:ssm:af-south-1:ACCOUNT_ID:parameter/reportafrica/prod/PAYSTACK_SECRET_KEY" },
+        { "name": "SENTRY_DSN", "valueFrom": "arn:aws:ssm:af-south-1:ACCOUNT_ID:parameter/reportafrica/prod/SENTRY_DSN" },
+        { "name": "FCM_SERVER_KEY", "valueFrom": "arn:aws:ssm:af-south-1:ACCOUNT_ID:parameter/reportafrica/prod/FCM_SERVER_KEY" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/reportafrica-api",
+          "awslogs-region": "af-south-1",
+          "awslogs-stream-prefix": "api"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "wget -qO- http://localhost:3001/api/v1/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}

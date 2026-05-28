@@ -1,0 +1,2 @@
+# SSL certificates go here (never commit actual certs)
+# Use certbot or ACM for production SSL

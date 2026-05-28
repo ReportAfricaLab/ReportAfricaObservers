@@ -5,6 +5,7 @@ dist
 .env
 .env.local
 .env.*.local
+.env.production
 *.log
 coverage
 .DS_Store
@@ -12,3 +13,8 @@ android/
 ios/
 *.apk
 *.ipa
+
+# SSL certs
+infra/nginx/ssl/*.pem
+infra/nginx/ssl/*.key
+infra/nginx/ssl/*.crt
