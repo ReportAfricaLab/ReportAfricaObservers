@@ -2,6 +2,7 @@ import { Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { NotificationsService } from '../notifications/notifications.service';
+import { FaceBlurService } from '../face-blur/face-blur.service';
 
 @Processor('notifications')
 export class NotificationProcessor {
@@ -32,16 +33,25 @@ export class NotificationProcessor {
 export class MediaProcessor {
   private readonly logger = new Logger(MediaProcessor.name);
 
+  constructor(private readonly faceBlurService: FaceBlurService) {}
+
   @Process('transcode-video')
   async handleTranscode(job: Job<{ fileUrl: string; reportId: string; userId: string }>) {
-    // In production: call FFmpeg or AWS MediaConvert
     this.logger.log(`Video transcoding queued: ${job.data.fileUrl} for report ${job.data.reportId}`);
-    // Placeholder — actual transcoding would happen here
   }
 
   @Process('generate-thumbnail')
   async handleThumbnail(job: Job<{ fileUrl: string; reportId: string }>) {
     this.logger.log(`Thumbnail generation queued: ${job.data.fileUrl}`);
+  }
+
+  @Process('blur-faces')
+  async handleBlurFaces(job: Job<{ s3Key: string; reportId: string }>) {
+    this.logger.log(`Face blur queued: ${job.data.s3Key} for report ${job.data.reportId}`);
+    const result = await this.faceBlurService.blurFacesInImage(job.data.s3Key);
+    if (result) {
+      this.logger.log(`Blurred ${result.facesDetected} face(s) → ${result.blurredKey}`);
+    }
   }
 }
 

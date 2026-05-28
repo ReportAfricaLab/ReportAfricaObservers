@@ -5,6 +5,8 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import * as redisStore from 'cache-manager-redis-yet';
 import { HealthModule } from './modules/health/health.module';
+import { FaceBlurModule } from './modules/face-blur/face-blur.module';
+import { FraudDetectionModule } from './modules/fraud-detection/fraud-detection.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ReportsModule } from './modules/reports/reports.module';
@@ -92,6 +94,8 @@ import { RekognitionModule } from './modules/rekognition/rekognition.module';
     QueueModule,
     RekognitionModule,
     HealthModule,
+    FaceBlurModule,
+    FraudDetectionModule,
   ],
 })
 export class AppModule {}

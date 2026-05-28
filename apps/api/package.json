@@ -24,6 +24,7 @@
     "@nestjs/websockets": "^10.3.0",
     "@reportafrica/shared": "*",
     "@sentry/node": "^10.55.0",
+    "@types/sharp": "^0.32.0",
     "bcrypt": "^5.1.1",
     "bull": "^4.12.0",
     "cache-manager": "^7.2.8",
@@ -38,6 +39,7 @@
     "pg": "^8.11.3",
     "reflect-metadata": "^0.2.1",
     "rxjs": "^7.8.1",
+    "sharp": "^0.34.5",
     "socket.io": "^4.7.2",
     "typeorm": "^0.3.19"
   },

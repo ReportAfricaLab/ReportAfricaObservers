@@ -3,6 +3,7 @@ import { BullModule } from '@nestjs/bull';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { NotificationProcessor, MediaProcessor, ModerationProcessor } from './queue.processors';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { FaceBlurModule } from '../face-blur/face-blur.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       { name: 'moderation' },
     ),
     NotificationsModule,
+    FaceBlurModule,
   ],
   providers: [NotificationProcessor, MediaProcessor, ModerationProcessor],
   exports: [BullModule],

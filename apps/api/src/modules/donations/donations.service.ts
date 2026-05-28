@@ -5,6 +5,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { CampaignEntity, DonationEntity } from '../../database/entities';
 import { PaystackService } from './paystack.service';
+import { FraudDetectionService } from '../fraud-detection/fraud-detection.service';
 import { CreateCampaignDto, InitiateDonationDto } from './dto/donations.dto';
 
 @Injectable()
@@ -15,6 +16,7 @@ export class DonationsService {
     @InjectRepository(DonationEntity)
     private readonly donationRepo: Repository<DonationEntity>,
     private readonly paystackService: PaystackService,
+    @Optional() private readonly fraudService?: FraudDetectionService,
     @Optional() @Inject(CACHE_MANAGER) private readonly cache?: Cache,
   ) {}
 
@@ -29,7 +31,20 @@ export class DonationsService {
       media: dto.media || [],
       documents: dto.documents || [],
     });
-    return this.campaignRepo.save(campaign);
+    const saved = await this.campaignRepo.save(campaign);
+
+    // Auto fraud analysis (async, non-blocking)
+    if (this.fraudService) {
+      this.fraudService.analyzeCampaign(saved.id).then((result) => {
+        if (result.recommendation === 'reject') {
+          this.campaignRepo.update(saved.id, { isActive: false, verificationLevel: 'fraud_flagged' });
+        } else if (result.recommendation === 'review') {
+          this.campaignRepo.update(saved.id, { verificationLevel: 'pending_review' });
+        }
+      }).catch(() => {});
+    }
+
+    return saved;
   }
 
   async getCampaignById(id: string): Promise<CampaignEntity> {
