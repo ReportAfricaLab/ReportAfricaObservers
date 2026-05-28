@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CacheModule } from '@nestjs/cache-manager';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import * as redisStore from 'cache-manager-redis-yet';
+import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ReportsModule } from './modules/reports/reports.module';
@@ -27,6 +31,30 @@ import { RekognitionModule } from './modules/rekognition/rekognition.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        store: redisStore,
+        host: config.get('REDIS_HOST', 'localhost'),
+        port: config.get<number>('REDIS_PORT', 6379),
+        ttl: 60000,
+      }),
+    }),
+    ThrottlerModule.forRoot([{
+      name: 'short',
+      ttl: 1000,
+      limit: 10,
+    }, {
+      name: 'medium',
+      ttl: 60000,
+      limit: 100,
+    }, {
+      name: 'long',
+      ttl: 3600000,
+      limit: 1000,
+    }]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -63,6 +91,7 @@ import { RekognitionModule } from './modules/rekognition/rekognition.module';
     SearchModule,
     QueueModule,
     RekognitionModule,
+    HealthModule,
   ],
 })
 export class AppModule {}

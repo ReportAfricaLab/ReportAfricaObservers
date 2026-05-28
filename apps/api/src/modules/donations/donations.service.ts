@@ -1,6 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { CampaignEntity, DonationEntity } from '../../database/entities';
 import { PaystackService } from './paystack.service';
 import { CreateCampaignDto, InitiateDonationDto } from './dto/donations.dto';
@@ -13,6 +15,7 @@ export class DonationsService {
     @InjectRepository(DonationEntity)
     private readonly donationRepo: Repository<DonationEntity>,
     private readonly paystackService: PaystackService,
+    @Optional() @Inject(CACHE_MANAGER) private readonly cache?: Cache,
   ) {}
 
   // === CAMPAIGNS ===
@@ -36,22 +39,48 @@ export class DonationsService {
   }
 
   async getCampaignFeed(country: string, page = 1, limit = 20) {
-    return this.campaignRepo.find({
+    const cacheKey = `campaigns:${country}:${page}`;
+    if (this.cache) {
+      const cached = await this.cache.get<{ data: CampaignEntity[]; meta: any }>(cacheKey);
+      if (cached) return cached;
+    }
+
+    const [data, total] = await this.campaignRepo.findAndCount({
       where: { country, isActive: true },
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
       relations: ['author'],
     });
+
+    const result = { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+
+    if (this.cache) {
+      await this.cache.set(cacheKey, result, 90000); // 90s cache
+    }
+
+    return result;
   }
 
   async getEmergencyCampaigns(country: string) {
-    return this.campaignRepo.find({
+    const cacheKey = `campaigns:emergency:${country}`;
+    if (this.cache) {
+      const cached = await this.cache.get<CampaignEntity[]>(cacheKey);
+      if (cached) return cached;
+    }
+
+    const results = await this.campaignRepo.find({
       where: { country, isActive: true, isEmergency: true },
       order: { createdAt: 'DESC' },
       take: 10,
       relations: ['author'],
     });
+
+    if (this.cache) {
+      await this.cache.set(cacheKey, results, 60000);
+    }
+
+    return results;
   }
 
   async getCampaignsByCategory(country: string, category: string, page = 1, limit = 20) {

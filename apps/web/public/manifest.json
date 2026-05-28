@@ -1,0 +1,17 @@
+{
+  "name": "ReportAfrica",
+  "short_name": "ReportAfrica",
+  "description": "Africa's Citizen-Powered Live Reporting Platform — real-time citizen journalism, civic accountability, and community reporting.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#0F7B6C",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/logo.png", "sizes": "192x192", "type": "image/png" }
+  ],
+  "categories": ["news", "social"],
+  "lang": "en",
+  "scope": "/"
+}

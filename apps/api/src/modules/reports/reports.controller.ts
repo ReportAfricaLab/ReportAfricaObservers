@@ -18,8 +18,16 @@ export class ReportsController {
     @Query('country') country: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
   ) {
-    return this.reportsService.getFeed(country, Number(page) || 1, Number(limit) || 20);
+    return this.reportsService.getFeed(
+      country,
+      Number(page) || 1,
+      Number(limit) || 20,
+      lat ? Number(lat) : undefined,
+      lng ? Number(lng) : undefined,
+    );
   }
 
   @Get('nearby')

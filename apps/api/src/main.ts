@@ -1,25 +1,61 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
+import { HttpAdapterHost } from '@nestjs/core';
+import * as helmet from 'helmet';
 import { AppModule } from './app.module';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { initSentry, SentryExceptionFilter } from './common/sentry';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  initSentry();
+
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  const app = await NestFactory.create(AppModule, {
+    logger: isProduction ? ['error', 'warn', 'log'] : ['error', 'warn', 'log', 'debug', 'verbose'],
+  });
+
+  // Security headers
+  app.use(helmet.default({
+    contentSecurityPolicy: isProduction ? undefined : false,
+    crossOriginEmbedderPolicy: false,
+  }));
 
   app.setGlobalPrefix('api/v1');
+
+  // CORS — strict in production, permissive in dev
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3002',
-      'http://localhost:3003',
-      'http://localhost:3004',
-      'https://reportafrica.com',
-      /\.reportafrica\.com$/,
-    ],
+    origin: isProduction
+      ? ['https://reportafrica.com', /\.reportafrica\.com$/]
+      : ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004'],
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    maxAge: 3600,
   });
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+
+  // Input validation & sanitization
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: true,
+    transformOptions: { enableImplicitConversion: true },
+  }));
+
+  // Body size limit (10MB for media metadata, actual uploads go to S3)
+  const expressApp = app.getHttpAdapter().getInstance();
+  const bodyParser = require('express').json;
+  expressApp.use(bodyParser({ limit: '10mb' }));
+
+  // Logging & error tracking
+  app.useGlobalInterceptors(new LoggingInterceptor());
+  const httpAdapterHost = app.get(HttpAdapterHost);
+  app.useGlobalFilters(new SentryExceptionFilter(httpAdapterHost.httpAdapter));
 
   const port = process.env.PORT || 3001;
   await app.listen(port);
-  console.log(`ReportAfrica API running on port ${port}`);
+
+  const logger = new Logger('Bootstrap');
+  logger.log(`ReportAfrica API running on port ${port} [${process.env.NODE_ENV || 'development'}]`);
 }
 bootstrap();

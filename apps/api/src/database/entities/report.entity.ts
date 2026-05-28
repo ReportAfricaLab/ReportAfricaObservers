@@ -11,6 +11,9 @@ import {
 import { UserEntity } from './user.entity';
 
 @Entity('reports')
+@Index(['country', 'createdAt'])
+@Index(['country', 'category'])
+@Index(['latitude', 'longitude'])
 export class ReportEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;

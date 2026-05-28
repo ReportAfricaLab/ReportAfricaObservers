@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } fr
 import { useNavigation } from '@react-navigation/native';
 import { useAppStore } from '../store/useAppStore';
 import { reportsAPI } from '../services/api';
+import { getCurrentLocation } from '../services/location';
 import { theme } from '../theme';
 import { COUNTRY_CONFIG } from '../constants';
 
@@ -25,12 +26,17 @@ export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const [reports, setReports] = useState<Report[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const brandName = COUNTRY_CONFIG[country]?.brandName || 'ReportAfrica';
 
+  useEffect(() => {
+    getCurrentLocation().then((loc) => { if (loc) setLocation(loc); }).catch(() => {});
+  }, []);
+
   const loadFeed = async () => {
     try {
-      const res = await reportsAPI.getFeed(country);
+      const res = await reportsAPI.getFeed(country, 1, location?.latitude, location?.longitude);
       setReports(res.data);
     } catch (err) {
       console.error('Failed to load feed:', err);
@@ -43,7 +49,7 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  useEffect(() => { loadFeed(); }, [country]);
+  useEffect(() => { loadFeed(); }, [country, location]);
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {

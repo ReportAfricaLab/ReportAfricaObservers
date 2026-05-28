@@ -1,0 +1,140 @@
+name: ReportAfrica CI/CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_target:
+        description: 'Deploy target'
+        required: true
+        default: 'none'
+        type: choice
+        options:
+          - none
+          - api
+          - web
+          - all
+
+env:
+  AWS_REGION: af-south-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.af-south-1.amazonaws.com
+  API_ECR_REPO: reportafrica-api
+  WEB_ECR_REPO: reportafrica-web
+  ECS_CLUSTER: reportafrica-cluster
+  API_ECS_SERVICE: reportafrica-api-service
+  API_TASK_DEFINITION: reportafrica-api-task
+
+jobs:
+  lint-and-build:
+    name: Lint & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Build all apps
+        run: npm run build
+
+  docker-api:
+    name: Build API Docker Image
+    needs: lint-and-build
+    if: ${{ github.event.inputs.deploy_target == 'api' || github.event.inputs.deploy_target == 'all' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push API image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -f apps/api/Dockerfile -t $ECR_REGISTRY/$API_ECR_REPO:$IMAGE_TAG -t $ECR_REGISTRY/$API_ECR_REPO:latest .
+          docker push $ECR_REGISTRY/$API_ECR_REPO:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$API_ECR_REPO:latest
+
+  docker-web:
+    name: Build Web Docker Image
+    needs: lint-and-build
+    if: ${{ github.event.inputs.deploy_target == 'web' || github.event.inputs.deploy_target == 'all' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push Web image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -f apps/web/Dockerfile -t $ECR_REGISTRY/$WEB_ECR_REPO:$IMAGE_TAG -t $ECR_REGISTRY/$WEB_ECR_REPO:latest .
+          docker push $ECR_REGISTRY/$WEB_ECR_REPO:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$WEB_ECR_REPO:latest
+
+  deploy-api:
+    name: Deploy API to ECS
+    needs: docker-api
+    if: ${{ github.event.inputs.deploy_target == 'api' || github.event.inputs.deploy_target == 'all' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update ECS service
+        run: |
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER \
+            --service $API_ECS_SERVICE \
+            --force-new-deployment
+
+  deploy-web:
+    name: Deploy Web
+    needs: docker-web
+    if: ${{ github.event.inputs.deploy_target == 'web' || github.event.inputs.deploy_target == 'all' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy web (update ECS or trigger Amplify)
+        run: |
+          echo "Web deployment triggered. Configure Amplify webhook or ECS update here."
+          # Option A: ECS
+          # aws ecs update-service --cluster $ECS_CLUSTER --service reportafrica-web-service --force-new-deployment
+          # Option B: Amplify
+          # aws amplify start-job --app-id ${{ secrets.AMPLIFY_APP_ID }} --branch-name main --job-type RELEASE

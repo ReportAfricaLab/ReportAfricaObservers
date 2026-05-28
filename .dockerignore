@@ -1,0 +1,11 @@
+node_modules
+.next
+dist
+.turbo
+.git
+.github
+*.md
+.env*
+apps/mobile
+apps/admin
+apps/gov-dashboard

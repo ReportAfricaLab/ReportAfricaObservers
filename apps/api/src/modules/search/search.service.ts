@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { ReportEntity, UserEntity } from '../../database/entities';
 
 @Injectable()
@@ -8,6 +10,7 @@ export class SearchService {
   constructor(
     @InjectRepository(ReportEntity) private readonly reportRepo: Repository<ReportEntity>,
     @InjectRepository(UserEntity) private readonly userRepo: Repository<UserEntity>,
+    @Optional() @Inject(CACHE_MANAGER) private readonly cache?: Cache,
   ) {}
 
   async searchReports(query: string, country?: string, category?: string, page = 1, limit = 20) {
@@ -50,8 +53,14 @@ export class SearchService {
   }
 
   async getTrending(country: string, hours = 24) {
+    const cacheKey = `trending:${country}:${hours}`;
+    if (this.cache) {
+      const cached = await this.cache.get<ReportEntity[]>(cacheKey);
+      if (cached) return cached;
+    }
+
     const since = new Date(Date.now() - hours * 60 * 60 * 1000);
-    return this.reportRepo
+    const results = await this.reportRepo
       .createQueryBuilder('report')
       .leftJoinAndSelect('report.author', 'author')
       .where('report.country = :country', { country })
@@ -59,6 +68,12 @@ export class SearchService {
       .orderBy('report.upvotes + report.commentCount + report.viewCount', 'DESC')
       .take(20)
       .getMany();
+
+    if (this.cache) {
+      await this.cache.set(cacheKey, results, 120000); // 2 min cache
+    }
+
+    return results;
   }
 
   async getSuggestions(query: string, country?: string) {

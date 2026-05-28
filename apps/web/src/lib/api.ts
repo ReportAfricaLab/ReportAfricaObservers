@@ -31,7 +31,11 @@ export const api = {
     me: (token: string) => fetchAPI('/users/me', { token }),
   },
   reports: {
-    feed: (country: string, page = 1) => fetchAPI(`/reports/feed?country=${country}&page=${page}`),
+    feed: (country: string, page = 1, lat?: number, lng?: number) => {
+      let url = `/reports/feed?country=${country}&page=${page}`;
+      if (lat && lng) url += `&lat=${lat}&lng=${lng}`;
+      return fetchAPI(url);
+    },
     nearby: (lat: number, lng: number, radius = 10) => fetchAPI(`/reports/nearby?lat=${lat}&lng=${lng}&radius=${radius}`),
     byCategory: (country: string, category: string, page = 1) => fetchAPI(`/reports/category/${category}?country=${country}&page=${page}`),
     getById: (id: string) => fetchAPI(`/reports/${id}`),

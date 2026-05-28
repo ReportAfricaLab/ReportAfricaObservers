@@ -25,18 +25,26 @@ export default function FeedPage() {
   const [category, setCategory] = useState('');
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    navigator.geolocation?.getCurrentPosition(
+      (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {}
+    );
+  }, []);
 
   useEffect(() => {
     setLoading(true);
     const fetchReports = category
       ? api.reports.byCategory(country, category)
-      : api.reports.feed(country);
+      : api.reports.feed(country, 1, location?.lat, location?.lng);
 
     fetchReports
       .then(setReports)
       .catch(() => setReports([]))
       .finally(() => setLoading(false));
-  }, [country, category]);
+  }, [country, category, location]);
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
