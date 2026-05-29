@@ -19,6 +19,7 @@ import FollowersScreen from '../screens/FollowersScreen';
 import WatchlistScreen from '../screens/WatchlistScreen';
 import CommentsScreen from '../screens/CommentsScreen';
 import ReferralScreen from '../screens/ReferralScreen';
+import BuyTipPackScreen from '../screens/BuyTipPackScreen';
 import MainTabs from './MainTabs';
 
 const Stack = createNativeStackNavigator();
@@ -46,6 +47,7 @@ export default function RootNavigator() {
             <Stack.Screen name="Watchlist" component={WatchlistScreen} options={{ headerShown: true, headerTitle: 'Watchlists', headerTintColor: '#0F7B6C' }} />
             <Stack.Screen name="Comments" component={CommentsScreen} options={{ headerShown: true, headerTitle: 'Comments', headerTintColor: '#0F7B6C' }} />
             <Stack.Screen name="Referral" component={ReferralScreen} options={{ headerShown: true, headerTitle: 'Referral', headerTintColor: '#0F7B6C' }} />
+            <Stack.Screen name="BuyTipPack" component={BuyTipPackScreen} options={{ headerShown: true, headerTitle: 'Buy Tip Pack', headerTintColor: '#0F7B6C' }} />
           </>
         ) : (
           <>

@@ -190,7 +190,7 @@ function ReportContent() {
                 </button>
               ))}
             </div>
-            <p className="text-xs text-amber-600 text-center">Need more? Buy a tip pack from your profile.</p>
+            <p className="text-xs text-amber-600 text-center"><a href="/tip-packs" className="underline font-medium">Need more? Buy a tip pack →</a></p>
           </div>
         )}
       </div>

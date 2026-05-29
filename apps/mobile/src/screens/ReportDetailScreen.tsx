@@ -172,7 +172,7 @@ export default function ReportDetailScreen({ route }: any) {
                   </TouchableOpacity>
                 ))}
               </View>
-              <TouchableOpacity style={styles.buyPackBtn} onPress={() => Alert.alert('Buy Tip Pack', 'Coming soon: In-app pack purchase')}>
+              <TouchableOpacity style={styles.buyPackBtn} onPress={() => navigation.navigate('BuyTipPack')}>
                 <Text style={styles.buyPackText}>+ Buy Tip Pack</Text>
               </TouchableOpacity>
             </View>
