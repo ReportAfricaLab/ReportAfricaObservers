@@ -12,3 +12,5 @@ export { CommentEntity } from './comment.entity';
 export { FollowEntity } from './follow.entity';
 export { ReportUpdateEntity } from './report-update.entity';
 export { TipEntity } from './tip.entity';
+export { ReferralEntity } from './referral.entity';
+export { WatchlistEntity } from './watchlist.entity';

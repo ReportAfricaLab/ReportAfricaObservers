@@ -131,6 +131,22 @@ npm run dev:mobile # Expo mobile
 - `GET /api/v1/report-updates/report/:reportId` — Get updates for report
 - `DELETE /api/v1/report-updates/:id` — Delete update (auth required, owner only)
 
+### Leaderboard
+- `GET /api/v1/leaderboard?country=NG&period=week&limit=20` — Top reporters
+- `GET /api/v1/leaderboard/me?country=NG&period=week` — My rank (auth required)
+
+### Referral
+- `GET /api/v1/referral/my-code` — Get my referral code (auth required)
+- `POST /api/v1/referral/generate` — Generate referral code (auth required)
+- `POST /api/v1/referral/apply` — Apply a referral code (auth required)
+- `GET /api/v1/referral/my-referrals` — My referral stats (auth required)
+
+### Watchlist (Geo-fenced Alerts)
+- `POST /api/v1/watchlist` — Create watchlist zone (auth required)
+- `GET /api/v1/watchlist` — Get my watchlists (auth required)
+- `PATCH /api/v1/watchlist/:id` — Update watchlist (auth required)
+- `DELETE /api/v1/watchlist/:id` — Delete watchlist (auth required)
+
 ## Development Phases
 
 - [x] Phase 1 — Foundation (monorepo, auth, reporting, feed, maps)
@@ -139,3 +155,4 @@ npm run dev:mobile # Expo mobile
 - [x] Phase 4 — Enterprise (media licensing, government dashboards)
 - [x] Phase 5 — Continental Expansion (multi-region, languages)
 - [x] Phase 6 — Engagement & Monetization (comments, tips, follows, report updates)
+- [x] Phase 7 — Retention & Growth (leaderboards, verification rewards, referrals, watchlists)

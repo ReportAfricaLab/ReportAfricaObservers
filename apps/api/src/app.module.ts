@@ -33,6 +33,9 @@ import { CommentsModule } from './modules/comments/comments.module';
 import { TipsModule } from './modules/tips/tips.module';
 import { FollowsModule } from './modules/follows/follows.module';
 import { ReportUpdatesModule } from './modules/report-updates/report-updates.module';
+import { LeaderboardModule } from './modules/leaderboard/leaderboard.module';
+import { ReferralModule } from './modules/referral/referral.module';
+import { WatchlistModule } from './modules/watchlist/watchlist.module';
 
 @Module({
   imports: [
@@ -104,6 +107,9 @@ import { ReportUpdatesModule } from './modules/report-updates/report-updates.mod
     TipsModule,
     FollowsModule,
     ReportUpdatesModule,
+    LeaderboardModule,
+    ReferralModule,
+    WatchlistModule,
   ],
 })
 export class AppModule {}

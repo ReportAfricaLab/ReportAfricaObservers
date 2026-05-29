@@ -8,6 +8,8 @@ import { CreateReportDto } from './dto/create-report.dto';
 import { ModerationService } from '../moderation/moderation.service';
 import { TrustService } from '../trust/trust.service';
 import { FollowsService } from '../follows/follows.service';
+import { WatchlistService } from '../watchlist/watchlist.service';
+import { ReferralService } from '../referral/referral.service';
 
 @Injectable()
 export class ReportsService {
@@ -17,6 +19,8 @@ export class ReportsService {
     private readonly moderationService: ModerationService,
     private readonly trustService: TrustService,
     private readonly followsService: FollowsService,
+    private readonly watchlistService: WatchlistService,
+    private readonly referralService: ReferralService,
     @Optional() @Inject(CACHE_MANAGER) private readonly cache?: Cache,
   ) {}
 
@@ -52,6 +56,19 @@ export class ReportsService {
 
     // Notify followers
     this.followsService.notifyFollowers(authorId, saved.title, saved.id).catch(() => {});
+
+    // Match watchlists and notify
+    this.watchlistService.matchAndNotify({
+      id: saved.id,
+      title: saved.title,
+      category: saved.category,
+      latitude: saved.latitude,
+      longitude: saved.longitude,
+      authorId,
+    }).catch(() => {});
+
+    // Check referral reward (first report triggers referrer reward)
+    this.referralService.checkAndRewardReferrer(authorId).catch(() => {});
 
     return saved;
   }
