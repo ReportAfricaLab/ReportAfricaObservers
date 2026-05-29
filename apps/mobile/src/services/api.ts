@@ -93,4 +93,57 @@ export const electionsAPI = {
   getLive: (country: string, election?: string) => api.get(`/elections/live?country=${country}${election ? `&election=${encodeURIComponent(election)}` : ''}`),
 };
 
+export const commentsAPI = {
+  create: (data: { reportId: string; text: string; parentId?: string }) => api.post('/comments', data),
+  getByReport: (reportId: string, page = 1) => api.get(`/comments/report/${reportId}?page=${page}`),
+  delete: (id: string) => api.delete(`/comments/${id}`),
+  like: (id: string) => api.patch(`/comments/${id}/like`),
+};
+
+export const tipsAPI = {
+  create: (data: { reportId: string; amount: number; email: string; message?: string }) => api.post('/tips', data),
+  verify: (reference: string) => api.get(`/tips/verify/${reference}`),
+  getByReport: (reportId: string) => api.get(`/tips/report/${reportId}`),
+  getReceived: (page = 1) => api.get(`/tips/received?page=${page}`),
+};
+
+export const followsAPI = {
+  follow: (userId: string) => api.post(`/follows/${userId}`),
+  unfollow: (userId: string) => api.delete(`/follows/${userId}`),
+  isFollowing: (userId: string) => api.get(`/follows/check/${userId}`),
+  getFeed: (page = 1) => api.get(`/follows/feed?page=${page}`),
+  getFollowers: (userId: string, page = 1) => api.get(`/follows/${userId}/followers?page=${page}`),
+  getFollowing: (userId: string, page = 1) => api.get(`/follows/${userId}/following?page=${page}`),
+  getCounts: (userId: string) => api.get(`/follows/${userId}/counts`),
+};
+
+export const reportUpdatesAPI = {
+  create: (data: { reportId: string; text: string; media?: { type: string; url: string }[]; type?: string }) => api.post('/report-updates', data),
+  getByReport: (reportId: string, page = 1) => api.get(`/report-updates/report/${reportId}?page=${page}`),
+  delete: (id: string) => api.delete(`/report-updates/${id}`),
+};
+
+export const leaderboardAPI = {
+  getTop: (country: string, period = 'week', limit = 20) => api.get(`/leaderboard?country=${country}&period=${period}&limit=${limit}`),
+  getMyRank: (country?: string, period = 'week') => api.get(`/leaderboard/me${country ? `?country=${country}&period=${period}` : `?period=${period}`}`),
+};
+
+export const referralAPI = {
+  getMyCode: () => api.get('/referral/my-code'),
+  generate: () => api.post('/referral/generate'),
+  apply: (code: string) => api.post('/referral/apply', { code }),
+  getMyReferrals: () => api.get('/referral/my-referrals'),
+};
+
+export const watchlistAPI = {
+  create: (data: { name: string; latitude: number; longitude: number; radiusKm?: number; categories?: string[] }) => api.post('/watchlist', data),
+  getAll: () => api.get('/watchlist'),
+  update: (id: string, data: any) => api.patch(`/watchlist/${id}`, data),
+  delete: (id: string) => api.delete(`/watchlist/${id}`),
+};
+
+export const voiceAPI = {
+  transcribe: (audioUrl: string, language = 'en') => api.post('/voice/transcribe', { audioUrl, language }),
+};
+
 export default api;

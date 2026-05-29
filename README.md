@@ -147,6 +147,9 @@ npm run dev:mobile # Expo mobile
 - `PATCH /api/v1/watchlist/:id` — Update watchlist (auth required)
 - `DELETE /api/v1/watchlist/:id` — Delete watchlist (auth required)
 
+### Voice (Transcription & Translation)
+- `POST /api/v1/voice/transcribe` — Transcribe voice note to text (auth required)
+
 ## Development Phases
 
 - [x] Phase 1 — Foundation (monorepo, auth, reporting, feed, maps)
@@ -156,3 +159,4 @@ npm run dev:mobile # Expo mobile
 - [x] Phase 5 — Continental Expansion (multi-region, languages)
 - [x] Phase 6 — Engagement & Monetization (comments, tips, follows, report updates)
 - [x] Phase 7 — Retention & Growth (leaderboards, verification rewards, referrals, watchlists)
+- [x] Phase 8 — Accessibility & Reach (offline mode, voice-to-text, translation)
