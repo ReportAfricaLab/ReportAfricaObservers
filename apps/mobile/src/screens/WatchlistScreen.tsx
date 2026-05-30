@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
 import { watchlistAPI } from '../services/api';
 import { getCurrentLocation } from '../services/location';
+import { useI18n } from '../store/useI18n';
 import { theme } from '../theme';
 import { REPORT_CATEGORY_LABELS } from '../constants';
 
 export default function WatchlistScreen() {
+  const { t } = useI18n();
   const [watchlists, setWatchlists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -73,7 +75,7 @@ export default function WatchlistScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>📍 Watchlists</Text>
+      <Text style={styles.heading}>📍 {t('activity.watchlists', 'Watchlists')}</Text>
       <Text style={styles.subheading}>Get alerts when reports happen near your zones</Text>
 
       <TouchableOpacity style={styles.createBtn} onPress={() => setShowCreate(!showCreate)}>

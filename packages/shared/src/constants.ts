@@ -105,3 +105,22 @@ export function canTipCrossCountry(fromCurrency: string, toCurrency: string): bo
   if (fromCurrency === toCurrency) return true;
   return KORA_SUPPORTED_CURRENCIES.includes(fromCurrency) && KORA_SUPPORTED_CURRENCIES.includes(toCurrency);
 }
+
+// App languages (official languages shared across multiple African countries)
+export const APP_LANGUAGES = [
+  { code: 'en', name: 'English', nativeName: 'English' },
+  { code: 'fr', name: 'French', nativeName: 'Fran\u00e7ais' },
+  { code: 'ar', name: 'Arabic', nativeName: '\u0627\u0644\u0639\u0631\u0628\u064a\u0629' },
+  { code: 'pt', name: 'Portuguese', nativeName: 'Portugu\u00eas' },
+  { code: 'sw', name: 'Swahili', nativeName: 'Kiswahili' },
+];
+
+// Auto-detect language from user's country
+export const COUNTRY_DEFAULT_LANGUAGE: Record<string, string> = {
+  NG: 'en', GH: 'en', KE: 'en', ZA: 'en', UG: 'en', RW: 'en',
+  TZ: 'sw', ET: 'en', SN: 'fr', CM: 'fr', EG: 'ar', MA: 'ar',
+  DZ: 'ar', TN: 'ar', CI: 'fr', AO: 'pt', MZ: 'pt', CD: 'fr',
+  SD: 'ar', LY: 'ar', ZW: 'en', ZM: 'en', MW: 'en', BJ: 'fr',
+  TG: 'fr', ML: 'fr', BF: 'fr', NE: 'fr', SL: 'en', LR: 'en',
+  SO: 'ar', MG: 'fr',
+};

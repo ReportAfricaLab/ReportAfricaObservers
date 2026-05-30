@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppStore } from '../store/useAppStore';
+import { useI18n } from '../store/useI18n';
 import { reportsAPI } from '../services/api';
 import { getCurrentLocation } from '../services/location';
 import { theme } from '../theme';
@@ -23,6 +24,7 @@ interface Report {
 
 export default function HomeScreen() {
   const { viewingCountry, setViewingCountry } = useAppStore();
+  const { t } = useI18n();
   const navigation = useNavigation<any>();
   const [reports, setReports] = useState<Report[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -111,10 +113,10 @@ export default function HomeScreen() {
         </TouchableOpacity>
         <View style={styles.sortRow}>
           <TouchableOpacity style={[styles.sortBtn, sort === 'smart' && styles.sortBtnActive]} onPress={() => setSort('smart')}>
-            <Text style={[styles.sortBtnText, sort === 'smart' && styles.sortBtnTextActive]}>🔥 Smart</Text>
+            <Text style={[styles.sortBtnText, sort === 'smart' && styles.sortBtnTextActive]}>🔥 {t('feed.smart', 'Smart')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.sortBtn, sort === 'latest' && styles.sortBtnActive]} onPress={() => setSort('latest')}>
-            <Text style={[styles.sortBtnText, sort === 'latest' && styles.sortBtnTextActive]}>🕐 Latest</Text>
+            <Text style={[styles.sortBtnText, sort === 'latest' && styles.sortBtnTextActive]}>🕐 {t('feed.latest', 'Latest')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -136,7 +138,7 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>No reports yet. Be the first to report!</Text>
+            <Text style={styles.emptyText}>{t('feed.empty', 'No reports yet. Be the first to report!')}</Text>
           </View>
         }
       />

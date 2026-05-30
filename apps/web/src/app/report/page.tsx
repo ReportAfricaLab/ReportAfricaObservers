@@ -3,6 +3,7 @@ import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { useI18n } from '@/lib/i18n';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 async function fetchAPI(endpoint: string, options: any = {}) {
@@ -24,6 +25,7 @@ function ReportContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
   const { token } = useAuth();
+  const { t } = useI18n();
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<any[]>([]);
@@ -157,16 +159,16 @@ function ReportContent() {
         <div className="flex items-center gap-4">
           <button onClick={() => handleVote('upvote')}
             className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition text-sm font-medium">
-            ↑ Confirm ({report.upvotes})
+            ↑ {t('report.confirm', 'Confirm')} ({report.upvotes})
           </button>
           <button onClick={() => handleVote('downvote')}
             className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition text-sm font-medium">
-            ↓ Dispute ({report.downvotes})
+            ↓ {t('report.dispute', 'Dispute')} ({report.downvotes})
           </button>
           {token && report.author?.id && (
             <button onClick={() => setShowTip(!showTip)}
               className="ml-auto px-4 py-2 bg-amber-50 text-amber-800 rounded-lg hover:bg-amber-100 transition text-sm font-medium">
-              💰 Tip
+              💰 {t('tip.tipReporter', 'Tip')}
             </button>
           )}
           <span className="text-sm text-gray-400">👁️ {report.viewCount} views</span>
@@ -200,7 +202,7 @@ function ReportContent() {
 
       {/* Report Updates */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">📝 Updates ({updates.length})</h2>
+        <h2 className="text-lg font-bold text-gray-900 mb-4">📝 {t('update.title', 'Updates')} ({updates.length})</h2>
 
         {token && report.authorId === (undefined) && null}
         {token && (
@@ -216,7 +218,7 @@ function ReportContent() {
         )}
 
         {updates.length === 0 ? (
-          <p className="text-center text-gray-400 text-sm py-4">No updates yet</p>
+          <p className="text-center text-gray-400 text-sm py-4">{t('update.empty', 'No updates yet')}</p>
         ) : (
           <div className="space-y-3">
             {updates.map((u: any) => (
@@ -232,13 +234,13 @@ function ReportContent() {
 
       {/* Comments Section */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">💬 Comments ({comments.length})</h2>
+        <h2 className="text-lg font-bold text-gray-900 mb-4">💬 {t('report.comments', 'Comments')} ({comments.length})</h2>
 
         {/* Comment Input */}
         {token && (
           <div className="flex gap-2 mb-6">
             <input value={commentText} onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Write a comment..." maxLength={1000}
+              placeholder={t('comment.write', 'Write a comment...')} maxLength={1000}
               className="flex-1 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#0F7B6C]"
               onKeyDown={(e) => e.key === 'Enter' && handleComment()} />
             <button onClick={handleComment} disabled={submitting}
@@ -250,7 +252,7 @@ function ReportContent() {
 
         {/* Comments List */}
         {comments.length === 0 ? (
-          <p className="text-center text-gray-400 text-sm py-4">No comments yet. Be the first!</p>
+          <p className="text-center text-gray-400 text-sm py-4">{t('comment.empty', 'No comments yet. Be the first!')}</p>
         ) : (
           <div className="space-y-3">
             {comments.map((comment: any) => (

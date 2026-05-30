@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAppStore } from '../store/useAppStore';
+import { useI18n } from '../store/useI18n';
 import { reportsAPI } from '../services/api';
 import { getCurrentLocation } from '../services/location';
 import { offlineQueue } from '../services/offline-queue';
@@ -16,6 +17,7 @@ const SEVERITY_OPTIONS = ['low', 'medium', 'high', 'critical'] as const;
 
 export default function CreateReportScreen() {
   const { country } = useAppStore();
+  const { t } = useI18n();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -135,11 +137,11 @@ export default function CreateReportScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.heading}>Create Report</Text>
-      <Text style={styles.subheading}>Report what&apos;s happening around you</Text>
+      <Text style={styles.heading}>{t('report.create', 'Create Report')}</Text>
+      <Text style={styles.subheading}>{t('report.description', 'Report what\'s happening around you')}</Text>
 
       {/* Category Selection */}
-      <Text style={styles.label}>Category</Text>
+      <Text style={styles.label}>{t('report.category', 'Category')}</Text>
       <View style={styles.categoryGrid}>
         {Object.entries(REPORT_CATEGORY_LABELS).map(([key, label]) => (
           <TouchableOpacity
@@ -153,14 +155,13 @@ export default function CreateReportScreen() {
       </View>
 
       {/* Title */}
-      <Text style={styles.label}>Title</Text>
+      <Text style={styles.label}>{t('report.title', 'Title')}</Text>
       <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Brief title of the incident" maxLength={200} />
 
-      {/* Description */}
-      <Text style={styles.label}>Description</Text>
+      <Text style={styles.label}>{t('report.description', 'Description')}</Text>
       <TextInput style={[styles.input, styles.textArea]} value={description} onChangeText={setDescription} placeholder="Describe what is happening..." multiline numberOfLines={5} maxLength={5000} />
       <TouchableOpacity style={[styles.voiceBtn, isRecording && styles.voiceBtnRecording]} onPress={handleVoiceRecord} disabled={transcribing}>
-        <Text style={styles.voiceBtnText}>{transcribing ? '⏳ Transcribing...' : isRecording ? '⏹️ Stop Recording' : '🎙️ Voice to Text'}</Text>
+        <Text style={styles.voiceBtnText}>{transcribing ? '⏳...' : isRecording ? '⏹️ Stop' : `🎙️ ${t('report.voice', 'Voice to Text')}`}</Text>
       </TouchableOpacity>
 
       {/* Severity */}
@@ -180,7 +181,7 @@ export default function CreateReportScreen() {
       </TouchableOpacity>
 
       {/* Media Capture */}
-      <Text style={styles.label}>Photos / Videos</Text>
+      <Text style={styles.label}>{t('report.photos', 'Photos / Videos')}</Text>
       <View style={styles.mediaRow}>
         <TouchableOpacity style={styles.mediaBtn} onPress={takePhoto}>
           <Text style={styles.mediaBtnText}>📷 Camera</Text>
@@ -211,7 +212,7 @@ export default function CreateReportScreen() {
 
       {/* Submit */}
       <TouchableOpacity style={[styles.submitBtn, submitting && styles.submitBtnDisabled]} onPress={handleSubmit} disabled={submitting}>
-        <Text style={styles.submitBtnText}>{submitting ? 'Submitting...' : 'Submit Report'}</Text>
+        <Text style={styles.submitBtnText}>{submitting ? '...' : t('report.submit', 'Submit Report')}</Text>
       </TouchableOpacity>
     </ScrollView>
   );

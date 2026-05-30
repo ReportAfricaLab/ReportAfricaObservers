@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert 
 import { useNavigation } from '@react-navigation/native';
 import { reportsAPI, followsAPI, tipsAPI, reportUpdatesAPI } from '../services/api';
 import { useAppStore } from '../store/useAppStore';
+import { useI18n } from '../store/useI18n';
 import { theme } from '../theme';
 
 const CURRENCY_RATES: Record<string, number> = {
@@ -40,6 +41,7 @@ export default function ReportDetailScreen({ route }: any) {
   const { id } = route.params;
   const navigation = useNavigation<any>();
   const { user, userCountry } = useAppStore();
+  const { t } = useI18n();
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -174,13 +176,13 @@ export default function ReportDetailScreen({ route }: any) {
       {!isAuthor && (
         <>
           <TouchableOpacity style={styles.tipBtn} onPress={() => setShowTip(!showTip)}>
-            <Text style={styles.tipBtnText}>💰 Tip Reporter</Text>
-            <Text style={styles.tipBalanceText}>Balance: {symbol}{tipBalance}</Text>
+            <Text style={styles.tipBtnText}>💰 {t('tip.tipReporter', 'Tip Reporter')}</Text>
+            <Text style={styles.tipBalanceText}>{t('tip.balance', 'Balance')}: {symbol}{tipBalance}</Text>
           </TouchableOpacity>
           {showTip && (
             <View style={styles.tipForm}>
               {report.country !== userCountry && (
-                <Text style={styles.conversionNote}>Reporter will receive equivalent in their local currency</Text>
+                <Text style={styles.conversionNote}>{t('tip.conversionNote', 'Reporter will receive equivalent in their local currency')}</Text>
               )}
               <View style={styles.tipPresetsRow}>
                 {presets.map((amt) => (
@@ -199,12 +201,12 @@ export default function ReportDetailScreen({ route }: any) {
 
       {/* Comments Button */}
       <TouchableOpacity style={styles.commentsBtn} onPress={() => navigation.navigate('Comments', { reportId: id })}>
-        <Text style={styles.commentsBtnText}>💬 View Comments ({report.commentCount})</Text>
+        <Text style={styles.commentsBtnText}>💬 {t('report.comments', 'View Comments')} ({report.commentCount})</Text>
       </TouchableOpacity>
 
       {/* Report Updates */}
       <View style={styles.updatesSection}>
-        <Text style={styles.updatesTitle}>📝 Updates ({updates.length})</Text>
+        <Text style={styles.updatesTitle}>📝 {t('update.title', 'Updates')} ({updates.length})</Text>
 
         {isAuthor && (
           <View style={styles.updateInputRow}>
@@ -224,7 +226,7 @@ export default function ReportDetailScreen({ route }: any) {
           </View>
         ))}
 
-        {updates.length === 0 && <Text style={styles.noUpdates}>No updates yet</Text>}
+        {updates.length === 0 && <Text style={styles.noUpdates}>{t('update.empty', 'No updates yet')}</Text>}
       </View>
     </ScrollView>
   );

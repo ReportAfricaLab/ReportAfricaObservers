@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, Alert, Share } from 'react-native';
 import { referralAPI } from '../services/api';
+import { useI18n } from '../store/useI18n';
 import { theme } from '../theme';
 
 export default function ReferralScreen() {
+  const { t } = useI18n();
   const [code, setCode] = useState('');
   const [stats, setStats] = useState<any>(null);
   const [applyCode, setApplyCode] = useState('');
@@ -50,7 +52,7 @@ export default function ReferralScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>🎁 Referral Program</Text>
+      <Text style={styles.heading}>🎁 {t('activity.referral', 'Referral Program')}</Text>
       <Text style={styles.subheading}>Invite friends and earn trust points when they post their first report</Text>
 
       {/* My Code */}

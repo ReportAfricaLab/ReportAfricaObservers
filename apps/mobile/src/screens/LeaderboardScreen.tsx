@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { leaderboardAPI } from '../services/api';
 import { useAppStore } from '../store/useAppStore';
+import { useI18n } from '../store/useI18n';
 import { theme } from '../theme';
 
 const PERIODS = ['week', 'month', 'all'] as const;
 
 export default function LeaderboardScreen() {
   const { country } = useAppStore();
+  const { t } = useI18n();
   const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week');
   const [data, setData] = useState<any[]>([]);
   const [myRank, setMyRank] = useState<any>(null);
@@ -42,7 +44,7 @@ export default function LeaderboardScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>🏆 Leaderboard</Text>
+      <Text style={styles.heading}>🏆 {t('leaderboard.title', 'Leaderboard')}</Text>
 
       <View style={styles.periodRow}>
         {PERIODS.map((p) => (

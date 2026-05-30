@@ -11,10 +11,13 @@ import axios from 'axios';
 
 const API_URL = __DEV__ ? 'http://10.162.41.17:3001/api/v1' : 'https://api.reportafrica.com/api/v1';
 
-const LANGUAGES: Record<string, string> = {
-  en: 'English', yo: 'Yorùbá', ha: 'Hausa', ig: 'Igbo', sw: 'Kiswahili',
-  fr: 'Français', zu: 'isiZulu', af: 'Afrikaans', rw: 'Kinyarwanda',
-};
+const LANGUAGES = [
+  { code: 'en', name: 'English' },
+  { code: 'fr', name: 'Français' },
+  { code: 'ar', name: 'العربية' },
+  { code: 'pt', name: 'Português' },
+  { code: 'sw', name: 'Kiswahili' },
+];
 
 const TRUST_LABELS: Record<string, { label: string; color: string }> = {
   new_reporter: { label: 'New Reporter', color: '#6B7280' },
@@ -26,7 +29,7 @@ const TRUST_LABELS: Record<string, { label: string; color: string }> = {
 
 export default function ProfileScreen() {
   const { user, logout, userCountry, token, setAuth } = useAppStore();
-  const { language, setLanguage } = useI18n();
+  const { language, setLanguage, t } = useI18n();
   const navigation = useNavigation<any>();
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [followers, setFollowers] = useState(0);
@@ -195,16 +198,16 @@ export default function ProfileScreen() {
 
         <TouchableOpacity style={styles.menuItem} onPress={() => setShowLangPicker(!showLangPicker)}>
           <Text style={styles.menuIcon}>🌍</Text>
-          <Text style={styles.menuText}>Language</Text>
-          <Text style={styles.menuValue}>{LANGUAGES[language] || 'English'}</Text>
+          <Text style={styles.menuText}>{t('settings.language', 'Language')}</Text>
+          <Text style={styles.menuValue}>{LANGUAGES.find((l) => l.code === language)?.name || 'English'}</Text>
         </TouchableOpacity>
 
         {showLangPicker && (
           <View style={styles.picker}>
-            {Object.entries(LANGUAGES).map(([code, name]) => (
-              <TouchableOpacity key={code} style={[styles.pickerItem, language === code && styles.pickerItemActive]}
-                onPress={() => { setLanguage(code); setShowLangPicker(false); }}>
-                <Text style={[styles.pickerText, language === code && styles.pickerTextActive]}>{name}</Text>
+            {LANGUAGES.map((lang) => (
+              <TouchableOpacity key={lang.code} style={[styles.pickerItem, language === lang.code && styles.pickerItemActive]}
+                onPress={() => { setLanguage(lang.code); setShowLangPicker(false); }}>
+                <Text style={[styles.pickerText, language === lang.code && styles.pickerTextActive]}>{lang.name}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -212,7 +215,7 @@ export default function ProfileScreen() {
 
         <View style={styles.menuItem}>
           <Text style={styles.menuIcon}>🏠</Text>
-          <Text style={styles.menuText}>Your Country</Text>
+          <Text style={styles.menuText}>{t('profile.yourCountry', 'Your Country')}</Text>
           <Text style={styles.menuValue}>{COUNTRY_CONFIG[userCountry]?.name || userCountry}</Text>
         </View>
       </View>

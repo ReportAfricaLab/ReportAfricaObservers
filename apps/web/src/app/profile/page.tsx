@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { useI18n } from '@/lib/i18n';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -24,6 +25,7 @@ const COUNTRY_NAMES: Record<string, string> = {
 
 export default function ProfilePage() {
   const { token, user, logout, login } = useAuth();
+  const { language, setLanguage, t } = useI18n();
   const [profile, setProfile] = useState<any>(null);
   const [followers, setFollowers] = useState(0);
   const [following, setFollowing] = useState(0);
@@ -181,6 +183,28 @@ export default function ProfilePage() {
             <span className="text-gray-400">›</span>
           </Link>
         ))}
+      </div>
+
+      {/* Settings */}
+      <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100 mb-6">
+        <p className="px-5 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase">{t('settings.title', 'Settings')}</p>
+        <div className="px-5 py-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-900">{t('settings.language', 'Language')}</span>
+            <select value={language} onChange={(e) => setLanguage(e.target.value)}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 text-gray-700 outline-none focus:ring-2 focus:ring-[#0F7B6C]">
+              <option value="en">English</option>
+              <option value="fr">Français</option>
+              <option value="ar">العربية</option>
+              <option value="pt">Português</option>
+              <option value="sw">Kiswahili</option>
+            </select>
+          </div>
+        </div>
+        <div className="px-5 py-4 flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-900">{t('profile.yourCountry', 'Your Country')}</span>
+          <span className="text-sm text-gray-500">{COUNTRY_NAMES[country] || country}</span>
+        </div>
       </div>
 
       {/* Info Links */}

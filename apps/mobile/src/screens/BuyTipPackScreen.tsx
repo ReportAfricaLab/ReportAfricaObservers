@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Linking } from 'react-native';
 import { tipsAPI } from '../services/api';
 import { useAppStore } from '../store/useAppStore';
+import { useI18n } from '../store/useI18n';
 import { theme } from '../theme';
 
 const CURRENCY_RATES: Record<string, number> = {
@@ -46,6 +47,7 @@ const BEST_VALUE_INDEX = 3;
 
 export default function BuyTipPackScreen({ navigation }: any) {
   const { user, country } = useAppStore();
+  const { t } = useI18n();
   const [balance, setBalance] = useState(0);
   const [purchasing, setPurchasing] = useState(false);
 
@@ -80,7 +82,7 @@ export default function BuyTipPackScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>💰 Buy Tip Pack</Text>
+      <Text style={styles.heading}>💰 {t('tip.buyPack', 'Buy Tip Pack')}</Text>
       <Text style={styles.subheading}>Buy credits to tip reporters for great reports</Text>
 
       <View style={styles.balanceBox}>

@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { commentsAPI } from '../services/api';
+import { useI18n } from '../store/useI18n';
 import { theme } from '../theme';
 
 export default function CommentsScreen({ route }: any) {
   const { reportId } = route.params;
+  const { t } = useI18n();
   const [comments, setComments] = useState<any[]>([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
@@ -79,7 +81,7 @@ export default function CommentsScreen({ route }: any) {
       {loading ? (
         <Text style={styles.loadingText}>Loading...</Text>
       ) : comments.length === 0 ? (
-        <Text style={styles.loadingText}>No comments yet. Be the first!</Text>
+        <Text style={styles.loadingText}>{t('comment.empty', 'No comments yet. Be the first!')}</Text>
       ) : (
         <FlatList
           data={comments}
@@ -96,12 +98,12 @@ export default function CommentsScreen({ route }: any) {
           style={styles.input}
           value={text}
           onChangeText={setText}
-          placeholder="Write a comment..."
+          placeholder={t('comment.write', 'Write a comment...')}
           maxLength={1000}
           multiline
         />
         <TouchableOpacity style={[styles.sendBtn, submitting && styles.sendBtnDisabled]} onPress={handleSubmit} disabled={submitting}>
-          <Text style={styles.sendBtnText}>↑</Text>
+          <Text style={styles.sendBtnText}>{t('comment.post', '↑')}</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

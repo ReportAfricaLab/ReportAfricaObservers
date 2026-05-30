@@ -11,12 +11,12 @@ export class LocalizationController {
   }
 
   @Get('languages')
-  getLanguages(@Query('country') country: string) {
-    return this.service.getSupportedLanguages(country || 'NG');
+  getLanguages() {
+    return this.service.getSupportedLanguages();
   }
 
-  @Get('countries')
-  getCountries() {
-    return this.service.getAllCountries();
+  @Get('default-language')
+  getDefaultLanguage(@Query('country') country: string) {
+    return { language: this.service.getDefaultLanguage(country || 'NG') };
   }
 }

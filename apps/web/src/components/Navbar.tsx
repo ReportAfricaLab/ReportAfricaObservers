@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
+import { useI18n } from '@/lib/i18n';
 
 const COUNTRY_CONFIG: Record<string, { brandName: string }> = {
   NG: { brandName: 'Nigeria' }, GH: { brandName: 'Ghana' }, KE: { brandName: 'Kenya' },
@@ -28,6 +29,7 @@ const TRUST_LABELS: Record<string, { label: string; color: string }> = {
 
 export default function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
+  const { t } = useI18n();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const brandName = user?.country ? COUNTRY_CONFIG[user.country]?.brandName || 'Africa' : 'Africa';
@@ -58,13 +60,13 @@ export default function Navbar() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
-          <Link href="/feed" className="hover:text-[#0F7B6C] transition">Feed</Link>
-          <Link href="/search" className="hover:text-[#0F7B6C] transition">Search</Link>
-          <Link href="/donations" className="hover:text-[#F97316] transition">Helping Hands</Link>
-          <Link href="/elections" className="hover:text-[#0F7B6C] transition">Elections</Link>
-          <Link href="/media-licensing" className="hover:text-[#0F7B6C] transition">Media</Link>
-          <Link href="/map" className="hover:text-[#0F7B6C] transition">Map</Link>
-          <Link href="/live" className="hover:text-[#D92D20] transition">🔴 Live</Link>
+          <Link href="/feed" className="hover:text-[#0F7B6C] transition">{t('nav.feed', 'Feed')}</Link>
+          <Link href="/search" className="hover:text-[#0F7B6C] transition">{t('nav.search', 'Search')}</Link>
+          <Link href="/donations" className="hover:text-[#F97316] transition">{t('nav.donations', 'Helping Hands')}</Link>
+          <Link href="/elections" className="hover:text-[#0F7B6C] transition">{t('nav.elections', 'Elections')}</Link>
+          <Link href="/media-licensing" className="hover:text-[#0F7B6C] transition">{t('nav.media', 'Media')}</Link>
+          <Link href="/map" className="hover:text-[#0F7B6C] transition">{t('nav.map', 'Map')}</Link>
+          <Link href="/live" className="hover:text-[#D92D20] transition">🔴 {t('nav.live', 'Live')}</Link>
         </nav>
 
         <div className="flex items-center gap-3">

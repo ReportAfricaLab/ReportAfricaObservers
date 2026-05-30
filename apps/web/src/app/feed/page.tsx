@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 import ReportCard from '@/components/ReportCard';
 
 const COUNTRIES = [
@@ -49,6 +50,7 @@ const CATEGORIES = [
 ];
 
 export default function FeedPage() {
+  const { t } = useI18n();
   const [country, setCountry] = useState('NG');
   const [category, setCategory] = useState('');
   const [reports, setReports] = useState<any[]>([]);
@@ -84,7 +86,7 @@ export default function FeedPage() {
             <option key={c.code} value={c.code}>{c.name}</option>
           ))}
         </select>
-        <span className="text-xs text-gray-400">Live Reports</span>
+        <span className="text-xs text-gray-400">{t('nav.live', 'Live Reports')}</span>
       </div>
 
       {/* Category Filter */}
@@ -99,11 +101,11 @@ export default function FeedPage() {
 
       {/* Reports */}
       {loading ? (
-        <div className="text-center py-20 text-gray-400">Loading reports...</div>
+        <div className="text-center py-20 text-gray-400">{t('feed.empty', 'Loading reports...')}</div>
       ) : reports.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-gray-400 text-lg">No reports yet</p>
-          <p className="text-gray-300 text-sm mt-2">Be the first to report what&apos;s happening in your area</p>
+          <p className="text-gray-400 text-lg">{t('feed.empty', 'No reports yet')}</p>
+          <p className="text-gray-300 text-sm mt-2">{t('report.create', 'Be the first to report what\'s happening in your area')}</p>
         </div>
       ) : (
         <div className="space-y-4">
