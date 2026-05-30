@@ -17,6 +17,7 @@ class SubmitElectionReportDto {
   @IsArray() @IsOptional() media?: { type: string; url: string }[];
   @IsNumber() @IsOptional() latitude?: number;
   @IsNumber() @IsOptional() longitude?: number;
+  @IsString() @IsOptional() recordedAt?: string;
 }
 
 @Controller('elections')

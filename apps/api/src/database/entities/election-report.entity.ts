@@ -66,6 +66,9 @@ export class ElectionReportEntity {
   @Column({ name: 'is_verified_observer', default: false })
   isVerifiedObserver: boolean;
 
+  @Column({ name: 'recorded_at', nullable: true })
+  recordedAt: Date;
+
   @CreateDateColumn({ name: 'created_at' })
   @Index()
   createdAt: Date;

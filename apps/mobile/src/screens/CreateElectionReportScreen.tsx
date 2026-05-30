@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert,
 import * as ImagePicker from 'expo-image-picker';
 import { useAppStore } from '../store/useAppStore';
 import { getCurrentLocation } from '../services/location';
+import { offlineQueue } from '../services/offline-queue';
 import { theme } from '../theme';
 import axios from 'axios';
 import { livestreamAPI } from '../services/api';
@@ -34,11 +35,14 @@ export default function CreateElectionReportScreen({ navigation }: any) {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
     (async () => {
       const loc = await getCurrentLocation();
       if (loc) { setLatitude(loc.latitude); setLongitude(loc.longitude); }
+      const online = await offlineQueue.isOnline();
+      setIsOffline(!online);
     })();
   }, []);
 
@@ -77,8 +81,36 @@ export default function CreateElectionReportScreen({ navigation }: any) {
 
   const handleGoLive = async () => {
     if (!state) { Alert.alert('Error', 'Enter your state before going live'); return; }
+
+    // Check if offline — switch to record mode
+    const online = await offlineQueue.isOnline();
+    if (!online) {
+      // Open camera in video recording mode
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('Permission needed'); return; }
+      const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Videos, quality: 0.8 });
+      if (!result.canceled && result.assets[0]) {
+        await offlineQueue.addElectionReport({
+          type: 'observer_report',
+          electionName: election,
+          state,
+          lga: lga || undefined,
+          ward: ward || undefined,
+          pollingUnit: pollingUnit || undefined,
+          description: `Live recording from ${state}${pollingUnit ? ` - PU ${pollingUnit}` : ''}`,
+          mediaUris: [result.assets[0].uri],
+          latitude: latitude || undefined,
+          longitude: longitude || undefined,
+          isRecording: true,
+        });
+        Alert.alert('📹 Recorded!', 'Video saved. Will upload automatically when internet is available.');
+      }
+      return;
+    }
+
+    // Online — proceed with livestream
     try {
-      const res = await livestreamAPI.create({
+      await livestreamAPI.create({
         title: `Election Live: ${state}${pollingUnit ? ` - PU ${pollingUnit}` : ''}`,
         description: `Live from ${election}`,
         latitude: latitude || undefined,
@@ -87,7 +119,7 @@ export default function CreateElectionReportScreen({ navigation }: any) {
         electionState: state,
         electionPollingUnit: pollingUnit || undefined,
       } as any);
-      Alert.alert('Stream Created', 'Your election livestream is ready. Use a streaming app or tap Go Live from the Live section.');
+      Alert.alert('Stream Created', 'Your election livestream is ready.');
       navigation.goBack();
     } catch {
       Alert.alert('Error', 'Failed to create livestream');
@@ -100,6 +132,29 @@ export default function CreateElectionReportScreen({ navigation }: any) {
 
     setSubmitting(true);
     try {
+      // Check if offline
+      const online = await offlineQueue.isOnline();
+      if (!online) {
+        await offlineQueue.addElectionReport({
+          type,
+          electionName: election,
+          state: state || undefined,
+          lga: lga || undefined,
+          ward: ward || undefined,
+          pollingUnit: pollingUnit || undefined,
+          description: description || undefined,
+          results: type === 'result_upload' ? Object.fromEntries(results.filter(r => r.party && r.votes).map(r => [r.party, Number(r.votes)])) : undefined,
+          mediaUris: mediaFiles.map(m => m.uri),
+          latitude: latitude || undefined,
+          longitude: longitude || undefined,
+        });
+        Alert.alert('Saved Offline', 'Your election report has been saved and will be submitted when internet is available.');
+        navigation.goBack();
+        setSubmitting(false);
+        return;
+      }
+
+      // Online — submit normally
       const media = mediaFiles.length > 0 ? await uploadMedia() : [];
       const resultsObj: Record<string, number> = {};
       if (type === 'result_upload') {
@@ -137,6 +192,12 @@ export default function CreateElectionReportScreen({ navigation }: any) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* Offline Banner */}
+      {isOffline && (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineBannerText}>⚠️ Offline — reports will be saved and uploaded when connected</Text>
+        </View>
+      )}
       <Text style={styles.heading}>Election Report</Text>
 
       {/* Election selector */}
@@ -215,7 +276,7 @@ export default function CreateElectionReportScreen({ navigation }: any) {
       {/* Go Live */}
       <Text style={styles.label}>Or go live from this polling unit</Text>
       <TouchableOpacity style={styles.goLiveBtn} onPress={handleGoLive}>
-        <Text style={styles.goLiveBtnText}>🔴 Go Live</Text>
+        <Text style={styles.goLiveBtnText}>{isOffline ? '📹 Record (Offline)' : '🔴 Go Live'}</Text>
       </TouchableOpacity>
       <Text style={styles.disclaimer}>⚠️ Ensure livestreaming is permitted at your polling unit</Text>
 
@@ -230,6 +291,8 @@ export default function CreateElectionReportScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.light.background },
   content: { padding: 16, paddingBottom: 40 },
+  offlineBanner: { backgroundColor: '#fef2f2', padding: 10, borderRadius: 8, marginBottom: 12 },
+  offlineBannerText: { fontSize: 12, color: '#dc2626', fontWeight: '600', textAlign: 'center' },
   heading: { fontSize: 20, fontWeight: '700', color: theme.colors.light.text, marginBottom: 12 },
   electionRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   electionChip: { flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: theme.colors.light.border, alignItems: 'center' },

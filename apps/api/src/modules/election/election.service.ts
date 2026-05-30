@@ -22,8 +22,16 @@ export class ElectionService {
     media?: { type: string; url: string }[];
     latitude?: number;
     longitude?: number;
+    recordedAt?: string;
   }) {
-    const report = this.electionRepo.create({ ...dto, userId, country, results: dto.results || {}, media: dto.media || [] });
+    const report = this.electionRepo.create({
+      ...dto,
+      userId,
+      country,
+      results: dto.results || {},
+      media: dto.media || [],
+      recordedAt: dto.recordedAt ? new Date(dto.recordedAt) : undefined,
+    });
     return this.electionRepo.save(report);
   }
 
