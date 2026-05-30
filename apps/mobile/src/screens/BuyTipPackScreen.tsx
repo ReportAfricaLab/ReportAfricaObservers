@@ -4,24 +4,45 @@ import { tipsAPI } from '../services/api';
 import { useAppStore } from '../store/useAppStore';
 import { theme } from '../theme';
 
-const TIP_PACKS: Record<string, { cost: number; value: number }[]> = {
-  NGN: [{ cost: 2000, value: 1500 }, { cost: 5000, value: 4000 }, { cost: 10000, value: 8500 }, { cost: 25000, value: 22000 }],
-  GHS: [{ cost: 20, value: 15 }, { cost: 50, value: 40 }, { cost: 100, value: 85 }, { cost: 250, value: 220 }],
-  KES: [{ cost: 200, value: 150 }, { cost: 500, value: 400 }, { cost: 1000, value: 850 }, { cost: 2500, value: 2200 }],
-  ZAR: [{ cost: 30, value: 20 }, { cost: 60, value: 50 }, { cost: 120, value: 100 }, { cost: 250, value: 220 }],
-  UGX: [{ cost: 7000, value: 5000 }, { cost: 15000, value: 12000 }, { cost: 25000, value: 20000 }, { cost: 60000, value: 50000 }],
-  RWF: [{ cost: 2000, value: 1500 }, { cost: 5000, value: 4000 }, { cost: 10000, value: 8500 }, { cost: 25000, value: 22000 }],
+const CURRENCY_RATES: Record<string, number> = {
+  NGN: 1500, GHS: 14, KES: 150, ZAR: 18, UGX: 3700, RWF: 1300,
+  TZS: 2600, ETB: 57, XOF: 600, XAF: 600, EGP: 48, MAD: 10,
+  DZD: 135, TND: 3.1, AOA: 850, MZN: 64, CDF: 2700, SDG: 600,
+  LYD: 4.8, USD: 1, ZMW: 26, MWK: 1700, SLE: 22, LRD: 190,
+  SOS: 570, MGA: 4500,
 };
+
+const PACK_MARKUPS = [0.25, 0.20, 0.15, 0.12, 0.10, 0.08];
+const PACK_USD_COSTS = [1.5, 3.5, 7, 16, 33, 65];
+
+function getPacksForCurrency(currency: string): { cost: number; value: number }[] {
+  const rate = CURRENCY_RATES[currency] || 1;
+  return PACK_USD_COSTS.map((usdCost, i) => {
+    const cost = Math.round(usdCost * rate / 100) * 100 || Math.round(usdCost * rate);
+    const value = Math.round(cost * (1 - PACK_MARKUPS[i]));
+    return { cost, value };
+  });
+}
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   NGN: '₦', GHS: 'GH₵', KES: 'KSh', ZAR: 'R', UGX: 'USh', RWF: 'RWF',
+  TZS: 'TSh', ETB: 'Br', XOF: 'CFA', XAF: 'FCFA', EGP: 'E£', MAD: 'MAD',
+  DZD: 'DA', TND: 'DT', AOA: 'Kz', MZN: 'MT', CDF: 'FC', SDG: 'SDG',
+  LYD: 'LD', USD: '$', ZMW: 'ZK', MWK: 'MK', SLE: 'Le', LRD: 'L$',
+  SOS: 'Sh', MGA: 'Ar',
 };
 
 const COUNTRY_CURRENCY: Record<string, string> = {
   NG: 'NGN', GH: 'GHS', KE: 'KES', ZA: 'ZAR', UG: 'UGX', RW: 'RWF',
+  TZ: 'TZS', ET: 'ETB', SN: 'XOF', CM: 'XAF', EG: 'EGP', MA: 'MAD',
+  DZ: 'DZD', TN: 'TND', CI: 'XOF', AO: 'AOA', MZ: 'MZN', CD: 'CDF',
+  SD: 'SDG', LY: 'LYD', ZW: 'USD', ZM: 'ZMW', MW: 'MWK', BJ: 'XOF',
+  TG: 'XOF', ML: 'XOF', BF: 'XOF', NE: 'XOF', SL: 'SLE', LR: 'LRD',
+  SO: 'SOS', MG: 'MGA',
 };
 
-const PACK_LABELS = ['Starter', 'Popular', 'Supporter', 'Champion'];
+const PACK_LABELS = ['Starter', 'Popular', 'Supporter', 'Champion', 'Elite', 'Legend'];
+const BEST_VALUE_INDEX = 3;
 
 export default function BuyTipPackScreen({ navigation }: any) {
   const { user, country } = useAppStore();
@@ -30,7 +51,7 @@ export default function BuyTipPackScreen({ navigation }: any) {
 
   const currency = COUNTRY_CURRENCY[country] || 'NGN';
   const symbol = CURRENCY_SYMBOLS[currency] || '₦';
-  const packs = TIP_PACKS[currency] || TIP_PACKS.NGN;
+  const packs = getPacksForCurrency(currency);
 
   useEffect(() => {
     tipsAPI.getBalance().then((res) => setBalance(res.data?.balance || 0)).catch(() => {});
@@ -69,9 +90,9 @@ export default function BuyTipPackScreen({ navigation }: any) {
 
       <View style={styles.packsGrid}>
         {packs.map((pack, index) => (
-          <TouchableOpacity key={index} style={[styles.packCard, index === 1 && styles.packCardPopular]}
+          <TouchableOpacity key={index} style={[styles.packCard, index === BEST_VALUE_INDEX && styles.packCardPopular]}
             onPress={() => handleBuyPack(index)} disabled={purchasing}>
-            {index === 1 && <Text style={styles.popularBadge}>BEST VALUE</Text>}
+            {index === BEST_VALUE_INDEX && <Text style={styles.popularBadge}>BEST VALUE</Text>}
             <Text style={styles.packLabel}>{PACK_LABELS[index]}</Text>
             <Text style={styles.packValue}>{symbol}{pack.value.toLocaleString()}</Text>
             <Text style={styles.packValueLabel}>tip credits</Text>

@@ -33,62 +33,67 @@ export const COLORS = {
   border: '#E5E7EB',
 } as const;
 
-// Tip Packs: { cost: what tipper pays, value: what gets credited to balance }
-export const TIP_PACKS: Record<string, { cost: number; value: number }[]> = {
-  NGN: [
-    { cost: 2000, value: 1500 },
-    { cost: 5000, value: 4000 },
-    { cost: 10000, value: 8500 },
-    { cost: 25000, value: 22000 },
-  ],
-  GHS: [
-    { cost: 20, value: 15 },
-    { cost: 50, value: 40 },
-    { cost: 100, value: 85 },
-    { cost: 250, value: 220 },
-  ],
-  KES: [
-    { cost: 200, value: 150 },
-    { cost: 500, value: 400 },
-    { cost: 1000, value: 850 },
-    { cost: 2500, value: 2200 },
-  ],
-  ZAR: [
-    { cost: 30, value: 20 },
-    { cost: 60, value: 50 },
-    { cost: 120, value: 100 },
-    { cost: 250, value: 220 },
-  ],
-  UGX: [
-    { cost: 7000, value: 5000 },
-    { cost: 15000, value: 12000 },
-    { cost: 25000, value: 20000 },
-    { cost: 60000, value: 50000 },
-  ],
-  RWF: [
-    { cost: 2000, value: 1500 },
-    { cost: 5000, value: 4000 },
-    { cost: 10000, value: 8500 },
-    { cost: 25000, value: 22000 },
-  ],
+// Tip Packs: defined in USD base, auto-calculated per currency
+// Markup: Starter 25%, Popular 20%, Supporter 15%, Champion 12%, Elite 10%, Legend 8%
+const TIP_PACK_BASE_USD = [
+  { label: 'Starter', usdCost: 1.5, markup: 0.25 },
+  { label: 'Popular', usdCost: 3.5, markup: 0.20 },
+  { label: 'Supporter', usdCost: 7, markup: 0.15 },
+  { label: 'Champion', usdCost: 16, markup: 0.12 },
+  { label: 'Elite', usdCost: 33, markup: 0.10 },
+  { label: 'Legend', usdCost: 65, markup: 0.08 },
+];
+
+// Approximate USD exchange rates (rounded for clean pricing)
+const CURRENCY_RATES: Record<string, number> = {
+  NGN: 1500, GHS: 14, KES: 150, ZAR: 18, UGX: 3700, RWF: 1300,
+  TZS: 2600, ETB: 57, XOF: 600, XAF: 600, EGP: 48, MAD: 10,
+  DZD: 135, TND: 3.1, AOA: 850, MZN: 64, CDF: 2700, SDG: 600,
+  LYD: 4.8, USD: 1, ZMW: 26, MWK: 1700, SLE: 22, LRD: 190,
+  SOS: 570, MGA: 4500,
 };
 
-// Preset tip amounts per currency (what tipper spends from balance)
-export const TIP_PRESETS: Record<string, number[]> = {
-  NGN: [1500, 3000, 5000, 10000],
-  GHS: [15, 30, 50, 100],
-  KES: [150, 300, 500, 1000],
-  ZAR: [20, 50, 100, 200],
-  UGX: [5000, 10000, 20000, 50000],
-  RWF: [1500, 3000, 5000, 10000],
+// Country to currency mapping (all 32 countries)
+export const COUNTRY_CURRENCY: Record<string, string> = {
+  NG: 'NGN', GH: 'GHS', KE: 'KES', ZA: 'ZAR', UG: 'UGX', RW: 'RWF',
+  TZ: 'TZS', ET: 'ETB', SN: 'XOF', CM: 'XAF', EG: 'EGP', MA: 'MAD',
+  DZ: 'DZD', TN: 'TND', CI: 'XOF', AO: 'AOA', MZ: 'MZN', CD: 'CDF',
+  SD: 'SDG', LY: 'LYD', ZW: 'USD', ZM: 'ZMW', MW: 'MWK', BJ: 'XOF',
+  TG: 'XOF', ML: 'XOF', BF: 'XOF', NE: 'XOF', SL: 'SLE', LR: 'LRD',
+  SO: 'SOS', MG: 'MGA',
 };
+
+// Generate tip packs for any currency
+function generatePacks(currency: string): { cost: number; value: number }[] {
+  const rate = CURRENCY_RATES[currency] || 1;
+  return TIP_PACK_BASE_USD.map((pack) => {
+    const cost = Math.round(pack.usdCost * rate / 100) * 100 || Math.round(pack.usdCost * rate);
+    const value = Math.round(cost * (1 - pack.markup));
+    return { cost, value };
+  });
+}
+
+// Pre-generated packs for all currencies
+export const TIP_PACKS: Record<string, { cost: number; value: number }[]> = Object.fromEntries(
+  Object.keys(CURRENCY_RATES).map((cur) => [cur, generatePacks(cur)]),
+);
+
+// Preset tip amounts (first 4 pack values as quick-pick)
+export const TIP_PRESETS: Record<string, number[]> = Object.fromEntries(
+  Object.keys(CURRENCY_RATES).map((cur) => {
+    const packs = TIP_PACKS[cur];
+    return [cur, packs.slice(0, 4).map((p) => p.value)];
+  }),
+);
+
+export const PACK_LABELS = ['Starter', 'Popular', 'Supporter', 'Champion', 'Elite', 'Legend'];
+export const BEST_VALUE_INDEX = 3; // Champion
 
 // Currency symbols
 export const CURRENCY_SYMBOLS: Record<string, string> = {
-  NGN: '₦',
-  GHS: 'GH₵',
-  KES: 'KSh',
-  ZAR: 'R',
-  UGX: 'USh',
-  RWF: 'RWF',
+  NGN: '₦', GHS: 'GH₵', KES: 'KSh', ZAR: 'R', UGX: 'USh', RWF: 'RWF',
+  TZS: 'TSh', ETB: 'Br', XOF: 'CFA', XAF: 'FCFA', EGP: 'E£', MAD: 'MAD',
+  DZD: 'DA', TND: 'DT', AOA: 'Kz', MZN: 'MT', CDF: 'FC', SDG: 'SDG',
+  LYD: 'LD', USD: '$', ZMW: 'ZK', MWK: 'MK', SLE: 'Le', LRD: 'L$',
+  SOS: 'Sh', MGA: 'Ar',
 };

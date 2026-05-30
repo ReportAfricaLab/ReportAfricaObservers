@@ -5,21 +5,35 @@ import { reportsAPI, followsAPI, tipsAPI, reportUpdatesAPI } from '../services/a
 import { useAppStore } from '../store/useAppStore';
 import { theme } from '../theme';
 
-const TIP_PRESETS: Record<string, number[]> = {
-  NGN: [1500, 3000, 5000, 10000],
-  GHS: [15, 30, 50, 100],
-  KES: [150, 300, 500, 1000],
-  ZAR: [20, 50, 100, 200],
-  UGX: [5000, 10000, 20000, 50000],
-  RWF: [1500, 3000, 5000, 10000],
+const CURRENCY_RATES: Record<string, number> = {
+  NGN: 1500, GHS: 14, KES: 150, ZAR: 18, UGX: 3700, RWF: 1300,
+  TZS: 2600, ETB: 57, XOF: 600, XAF: 600, EGP: 48, MAD: 10,
+  DZD: 135, TND: 3.1, AOA: 850, MZN: 64, CDF: 2700, SDG: 600,
+  LYD: 4.8, USD: 1, ZMW: 26, MWK: 1700, SLE: 22, LRD: 190,
+  SOS: 570, MGA: 4500,
 };
+
+function getTipPresets(currency: string): number[] {
+  const rate = CURRENCY_RATES[currency] || 1;
+  const usdAmounts = [1, 2, 3.5, 7];
+  return usdAmounts.map((usd) => Math.round(usd * rate / 100) * 100 || Math.round(usd * rate));
+}
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   NGN: '₦', GHS: 'GH₵', KES: 'KSh', ZAR: 'R', UGX: 'USh', RWF: 'RWF',
+  TZS: 'TSh', ETB: 'Br', XOF: 'CFA', XAF: 'FCFA', EGP: 'E£', MAD: 'MAD',
+  DZD: 'DA', TND: 'DT', AOA: 'Kz', MZN: 'MT', CDF: 'FC', SDG: 'SDG',
+  LYD: 'LD', USD: '$', ZMW: 'ZK', MWK: 'MK', SLE: 'Le', LRD: 'L$',
+  SOS: 'Sh', MGA: 'Ar',
 };
 
 const COUNTRY_CURRENCY: Record<string, string> = {
   NG: 'NGN', GH: 'GHS', KE: 'KES', ZA: 'ZAR', UG: 'UGX', RW: 'RWF',
+  TZ: 'TZS', ET: 'ETB', SN: 'XOF', CM: 'XAF', EG: 'EGP', MA: 'MAD',
+  DZ: 'DZD', TN: 'TND', CI: 'XOF', AO: 'AOA', MZ: 'MZN', CD: 'CDF',
+  SD: 'SDG', LY: 'LYD', ZW: 'USD', ZM: 'ZMW', MW: 'MWK', BJ: 'XOF',
+  TG: 'XOF', ML: 'XOF', BF: 'XOF', NE: 'XOF', SL: 'SLE', LR: 'LRD',
+  SO: 'SOS', MG: 'MGA',
 };
 
 export default function ReportDetailScreen({ route }: any) {
@@ -36,7 +50,7 @@ export default function ReportDetailScreen({ route }: any) {
 
   const currency = COUNTRY_CURRENCY[country] || 'NGN';
   const symbol = CURRENCY_SYMBOLS[currency] || '₦';
-  const presets = TIP_PRESETS[currency] || TIP_PRESETS.NGN;
+  const presets = getTipPresets(currency);
 
   useEffect(() => {
     reportsAPI.getById(id).then((res) => setReport(res.data)).finally(() => setLoading(false));

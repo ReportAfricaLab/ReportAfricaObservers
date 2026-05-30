@@ -4,20 +4,36 @@ import { useAuth } from '@/lib/auth-context';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
-const TIP_PACKS: Record<string, { cost: number; value: number }[]> = {
-  NGN: [{ cost: 2000, value: 1500 }, { cost: 5000, value: 4000 }, { cost: 10000, value: 8500 }, { cost: 25000, value: 22000 }],
-  GHS: [{ cost: 20, value: 15 }, { cost: 50, value: 40 }, { cost: 100, value: 85 }, { cost: 250, value: 220 }],
-  KES: [{ cost: 200, value: 150 }, { cost: 500, value: 400 }, { cost: 1000, value: 850 }, { cost: 2500, value: 2200 }],
-  ZAR: [{ cost: 30, value: 20 }, { cost: 60, value: 50 }, { cost: 120, value: 100 }, { cost: 250, value: 220 }],
-  UGX: [{ cost: 7000, value: 5000 }, { cost: 15000, value: 12000 }, { cost: 25000, value: 20000 }, { cost: 60000, value: 50000 }],
-  RWF: [{ cost: 2000, value: 1500 }, { cost: 5000, value: 4000 }, { cost: 10000, value: 8500 }, { cost: 25000, value: 22000 }],
+const CURRENCY_RATES: Record<string, number> = {
+  NGN: 1500, GHS: 14, KES: 150, ZAR: 18, UGX: 3700, RWF: 1300,
+  TZS: 2600, ETB: 57, XOF: 600, XAF: 600, EGP: 48, MAD: 10,
+  DZD: 135, TND: 3.1, AOA: 850, MZN: 64, CDF: 2700, SDG: 600,
+  LYD: 4.8, USD: 1, ZMW: 26, MWK: 1700, SLE: 22, LRD: 190,
+  SOS: 570, MGA: 4500,
 };
+
+const PACK_MARKUPS = [0.25, 0.20, 0.15, 0.12, 0.10, 0.08];
+const PACK_USD_COSTS = [1.5, 3.5, 7, 16, 33, 65];
+
+function getPacksForCurrency(currency: string): { cost: number; value: number }[] {
+  const rate = CURRENCY_RATES[currency] || 1;
+  return PACK_USD_COSTS.map((usdCost, i) => {
+    const cost = Math.round(usdCost * rate / 100) * 100 || Math.round(usdCost * rate);
+    const value = Math.round(cost * (1 - PACK_MARKUPS[i]));
+    return { cost, value };
+  });
+}
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   NGN: '₦', GHS: 'GH₵', KES: 'KSh', ZAR: 'R', UGX: 'USh', RWF: 'RWF',
+  TZS: 'TSh', ETB: 'Br', XOF: 'CFA', XAF: 'FCFA', EGP: 'E£', MAD: 'MAD',
+  DZD: 'DA', TND: 'DT', AOA: 'Kz', MZN: 'MT', CDF: 'FC', SDG: 'SDG',
+  LYD: 'LD', USD: '$', ZMW: 'ZK', MWK: 'MK', SLE: 'Le', LRD: 'L$',
+  SOS: 'Sh', MGA: 'Ar',
 };
 
-const PACK_LABELS = ['Starter', 'Popular', 'Supporter', 'Champion'];
+const PACK_LABELS = ['Starter', 'Popular', 'Supporter', 'Champion', 'Elite', 'Legend'];
+const BEST_VALUE_INDEX = 3;
 
 export default function TipPacksPage() {
   const { token, user } = useAuth();
@@ -26,7 +42,7 @@ export default function TipPacksPage() {
   const [purchasing, setPurchasing] = useState(false);
 
   const symbol = CURRENCY_SYMBOLS[currency] || '₦';
-  const packs = TIP_PACKS[currency] || TIP_PACKS.NGN;
+  const packs = getPacksForCurrency(currency);
 
   useEffect(() => {
     if (!token) return;
@@ -73,8 +89,8 @@ export default function TipPacksPage() {
       <div className="grid grid-cols-2 gap-4 mb-8">
         {packs.map((pack, index) => (
           <button key={index} onClick={() => handleBuy(index)} disabled={purchasing}
-            className={`relative bg-white rounded-xl p-5 text-center border-2 transition hover:shadow-md disabled:opacity-50 ${index === 1 ? 'border-[#F4B400]' : 'border-gray-200'}`}>
-            {index === 1 && (
+            className={`relative bg-white rounded-xl p-5 text-center border-2 transition hover:shadow-md disabled:opacity-50 ${index === BEST_VALUE_INDEX ? 'border-[#F4B400]' : 'border-gray-200'}`}>
+            {index === BEST_VALUE_INDEX && (
               <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#F4B400] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                 BEST VALUE
               </span>
