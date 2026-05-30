@@ -14,6 +14,7 @@ import GoLiveScreen from '../screens/GoLiveScreen';
 import SearchScreen from '../screens/SearchScreen';
 import ElectionsScreen from '../screens/ElectionsScreen';
 import CreateElectionReportScreen from '../screens/CreateElectionReportScreen';
+import DonationsScreen from '../screens/DonationsScreen';
 import LeaderboardScreen from '../screens/LeaderboardScreen';
 import FollowersScreen from '../screens/FollowersScreen';
 import WatchlistScreen from '../screens/WatchlistScreen';
@@ -45,6 +46,7 @@ export default function RootNavigator() {
             <Stack.Screen name="Search" component={SearchScreen} />
             <Stack.Screen name="Elections" component={ElectionsScreen} />
             <Stack.Screen name="CreateElectionReport" component={CreateElectionReportScreen} options={{ headerShown: true, headerTitle: 'Election Report', headerTintColor: '#0F7B6C' }} />
+            <Stack.Screen name="Donations" component={DonationsScreen} options={{ headerShown: true, headerTitle: 'Helping Hands', headerTintColor: '#F97316' }} />
             <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ headerShown: true, headerTitle: 'Leaderboard', headerTintColor: '#0F7B6C' }} />
             <Stack.Screen name="Followers" component={FollowersScreen} options={{ headerShown: true, headerTitle: 'Followers', headerTintColor: '#0F7B6C' }} />
             <Stack.Screen name="Watchlist" component={WatchlistScreen} options={{ headerShown: true, headerTitle: 'Watchlists', headerTintColor: '#0F7B6C' }} />

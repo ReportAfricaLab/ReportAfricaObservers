@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Image, Modal, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppStore } from '../store/useAppStore';
 import { useI18n } from '../store/useI18n';
@@ -38,6 +38,7 @@ export default function HomeScreen() {
   const [isOffline, setIsOffline] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [activeEmergencies, setActiveEmergencies] = useState<any[]>([]);
+  const [showDrawer, setShowDrawer] = useState(false);
 
   const brandName = COUNTRY_CONFIG[viewingCountry]?.brandName || COUNTRY_CONFIG[viewingCountry]?.name || 'ReportAfrica';
 
@@ -116,29 +117,21 @@ export default function HomeScreen() {
           <Text style={styles.pendingBannerText}>📤 {pendingCount} report{pendingCount > 1 ? 's' : ''} syncing...</Text>
         </View>
       )}
+      {/* Row 1: Logo + Search + Bell + Drawer */}
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <View style={styles.headerRow}>
           <View style={styles.brandRow}>
             <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
-            <View>
-              <Text style={styles.brandName}>{brandName}</Text>
-              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Live Reports</Text>
-            </View>
+            <Text style={styles.brandName}>{brandName}</Text>
           </View>
-          <TouchableOpacity style={styles.searchBtn} onPress={() => navigation.navigate('Search')}>
-            <Text style={styles.searchBtnText}>🔍</Text>
+          <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Search')}>
+            <Text style={styles.headerIconText}>🔍</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.searchBtn} onPress={() => navigation.navigate('Notifications')}>
-            <Text style={styles.searchBtnText}>🔔</Text>
+          <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Notifications')}>
+            <Text style={styles.headerIconText}>🔔</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.electionBtn} onPress={() => navigation.navigate('Elections')}>
-            <Text style={styles.electionBtnText}>🗳️</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.liveBtn} onPress={() => navigation.navigate('GoLive')}>
-            <Text style={styles.liveBtnText}>● Live</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.createBtn} onPress={() => navigation.navigate('CreateReport')}>
-            <Text style={styles.createBtnText}>+</Text>
+          <TouchableOpacity style={styles.headerIcon} onPress={() => setShowDrawer(true)}>
+            <Text style={styles.headerIconText}>☰</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -190,6 +183,35 @@ export default function HomeScreen() {
           </View>
         }
       />
+      {/* Right Drawer */}
+      <Modal visible={showDrawer} animationType="slide" transparent onRequestClose={() => setShowDrawer(false)}>
+        <TouchableOpacity style={styles.drawerOverlay} activeOpacity={1} onPress={() => setShowDrawer(false)}>
+          <View style={styles.drawerContainer}>
+            <Text style={styles.drawerTitle}>ReportAfrica</Text>
+            <View style={styles.drawerDivider} />
+            <ScrollView>
+              {[
+                { screen: 'Donations', icon: '🤝', label: 'Helping Hands' },
+                { screen: 'Elections', icon: '🗳️', label: 'Elections' },
+                { screen: 'GoLive', icon: '🔴', label: 'Go Live' },
+                { screen: 'LicenseRequests', icon: '📄', label: 'Media Licensing' },
+                { screen: 'Leaderboard', icon: '🏆', label: 'Leaderboard' },
+                { screen: 'Earnings', icon: '💰', label: 'My Earnings' },
+                { screen: 'TrustProfile', icon: '🛡️', label: 'Trust Profile' },
+                { screen: 'Watchlist', icon: '📍', label: 'Watchlists' },
+                { screen: 'Referral', icon: '🎁', label: 'Referral Program' },
+                { screen: 'BuyTipPack', icon: '💳', label: 'Buy Tip Pack' },
+              ].map((item) => (
+                <TouchableOpacity key={item.screen} style={styles.drawerItem}
+                  onPress={() => { setShowDrawer(false); navigation.navigate(item.screen); }}>
+                  <Text style={styles.drawerItemIcon}>{item.icon}</Text>
+                  <Text style={styles.drawerItemText}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -201,7 +223,12 @@ const styles = StyleSheet.create({
   pendingBanner: { backgroundColor: '#eff6ff', paddingVertical: 8, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#bfdbfe' },
   pendingBannerText: { fontSize: 12, color: '#2563eb', fontWeight: '600', textAlign: 'center' },
   header: { paddingHorizontal: 16, paddingTop: 60, paddingBottom: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: theme.colors.light.border },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerRow: { flexDirection: 'row', alignItems: 'center' },
+  headerIcon: { paddingHorizontal: 8, paddingVertical: 8 },
+  headerIconText: { fontSize: 20 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  logo: { width: 32, height: 32 },
+  brandName: { fontSize: theme.fontSize.lg, fontWeight: '700', color: theme.colors.primary },
   filterRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#fff' },
   countrySelector: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#f3f4f6', borderRadius: 20 },
   countrySelectorText: { fontSize: 13, fontWeight: '600', color: theme.colors.light.text },
@@ -220,18 +247,6 @@ const styles = StyleSheet.create({
   emergencyItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
   emergencyItemText: { fontSize: 12, color: '#991b1b', flex: 1 },
   emergencyItemTime: { fontSize: 10, color: '#dc2626' },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  logo: { width: 40, height: 40 },
-  brandName: { fontSize: theme.fontSize.xl, fontWeight: '700', color: theme.colors.primary },
-  subtitle: { fontSize: theme.fontSize.sm, color: theme.colors.light.textSecondary, marginTop: 2 },
-  createBtn: { backgroundColor: theme.colors.emergency, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
-  createBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  searchBtn: { paddingHorizontal: 8, paddingVertical: 8 },
-  searchBtnText: { fontSize: 18 },
-  electionBtn: { paddingHorizontal: 8, paddingVertical: 8 },
-  electionBtnText: { fontSize: 18 },
-  liveBtn: { backgroundColor: '#000', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
-  liveBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   list: { padding: 16, gap: 12 },
   card: { backgroundColor: '#fff', borderRadius: theme.borderRadius.md, padding: 16, borderWidth: 1, borderColor: theme.colors.light.border },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
@@ -244,4 +259,11 @@ const styles = StyleSheet.create({
   meta: { fontSize: theme.fontSize.xs, color: theme.colors.light.textSecondary },
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyText: { fontSize: theme.fontSize.md, color: theme.colors.light.textSecondary },
+  drawerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', flexDirection: 'row', justifyContent: 'flex-end' },
+  drawerContainer: { width: '75%', backgroundColor: '#fff', paddingTop: 60, paddingHorizontal: 20, paddingBottom: 40 },
+  drawerTitle: { fontSize: 20, fontWeight: '700', color: theme.colors.primary, marginBottom: 12 },
+  drawerDivider: { height: 1, backgroundColor: theme.colors.light.border, marginBottom: 16 },
+  drawerItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
+  drawerItemIcon: { fontSize: 20 },
+  drawerItemText: { fontSize: 15, fontWeight: '500', color: theme.colors.light.text },
 });

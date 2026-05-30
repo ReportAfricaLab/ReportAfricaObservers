@@ -180,12 +180,6 @@ export default function ProfileScreen() {
         <Text style={[styles.menuSectionLabel, { color: colors.textSecondary }]}>Activity</Text>
         {[
           { screen: 'Followers', icon: '👥', label: 'Followers & Following', params: { userId: user?.id } },
-          { screen: 'Earnings', icon: '💰', label: 'My Earnings' },
-          { screen: 'TrustProfile', icon: '🛡️', label: 'Trust Profile' },
-          { screen: 'Leaderboard', icon: '🏆', label: 'Leaderboard' },
-          { screen: 'BuyTipPack', icon: '💳', label: 'Buy Tip Pack' },
-          { screen: 'Watchlist', icon: '📍', label: 'Watchlists & Alerts' },
-          { screen: 'Referral', icon: '🎁', label: 'Referral Program' },
           { screen: 'LicenseRequests', icon: '📄', label: 'License Requests' },
         ].map((item) => (
           <TouchableOpacity key={item.screen} style={[styles.menuItem, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => navigation.navigate(item.screen, item.params)}>
