@@ -1,6 +1,0 @@
-{
-  "commands": [
-    "cat > /home/ec2-user/.env.production << 'EOF'\nNODE_ENV=production\nPORT=3001\nDATABASE_HOST=reportafrica-db.cng08osmae5x.eu-west-1.rds.amazonaws.com\nDATABASE_PORT=5432\nDATABASE_NAME=reportafrica\nDATABASE_USER=reportafrica_admin\nDATABASE_PASSWORD=JesusisLord2026!\nDATABASE_SSL=true\nREDIS_HOST=reportafrica-redis.wt3d19.0001.euw1.cache.amazonaws.com\nREDIS_PORT=6379\nAWS_REGION=eu-west-1\nAWS_S3_BUCKET=reportafrica-media-prod\nJWT_SECRET=reportafrica-jwt-secret-prod-2026-secure-key\nJWT_EXPIRATION=7d\nEOF",
-    "chown ec2-user:ec2-user /home/ec2-user/.env.production"
-  ]
-}

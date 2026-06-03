@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { RekognitionClient, DetectModerationLabelsCommand, DetectFacesCommand, DetectLabelsCommand } from '@aws-sdk/client-rekognition';
 
 export interface RekognitionResult {
   isApproved: boolean;
@@ -11,112 +12,84 @@ export interface RekognitionResult {
 @Injectable()
 export class RekognitionService {
   private readonly logger = new Logger(RekognitionService.name);
-  private readonly region: string;
-  private readonly accessKeyId: string;
-  private readonly secretAccessKey: string;
+  private readonly client: RekognitionClient | null;
   private readonly bucket: string;
 
   constructor(private readonly config: ConfigService) {
-    this.region = this.config.get('AWS_REGION', 'af-south-1');
-    this.accessKeyId = this.config.get('AWS_ACCESS_KEY_ID', '');
-    this.secretAccessKey = this.config.get('AWS_SECRET_ACCESS_KEY', '');
-    this.bucket = this.config.get('AWS_S3_BUCKET', 'reportafrica-media');
+    const accessKeyId = this.config.get('AWS_ACCESS_KEY_ID', '');
+    const secretAccessKey = this.config.get('AWS_SECRET_ACCESS_KEY', '');
+    const region = this.config.get('AWS_REGION', 'eu-west-1');
+    this.bucket = this.config.get('AWS_S3_BUCKET', 'reportafrica-media-prod');
+
+    if (accessKeyId && secretAccessKey) {
+      this.client = new RekognitionClient({ region, credentials: { accessKeyId, secretAccessKey } });
+    } else {
+      this.client = null;
+    }
   }
 
   async moderateImage(s3Key: string): Promise<RekognitionResult> {
-    if (!this.accessKeyId || this.accessKeyId === 'your_access_key') {
-      return this.mockModeration();
-    }
+    if (!this.client) return this.mockModeration();
 
     try {
-      const response = await fetch(`https://rekognition.${this.region}.amazonaws.com`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-amz-json-1.1',
-          'X-Amz-Target': 'RekognitionService.DetectModerationLabels',
-        },
-        body: JSON.stringify({
-          Image: { S3Object: { Bucket: this.bucket, Name: s3Key } },
-          MinConfidence: 60,
-        }),
+      const command = new DetectModerationLabelsCommand({
+        Image: { S3Object: { Bucket: this.bucket, Name: s3Key } },
+        MinConfidence: 60,
       });
-
-      const data = await response.json();
-      const moderationLabels = (data.ModerationLabels || []).map((l: any) => ({
-        name: l.Name,
-        confidence: l.Confidence,
+      const response = await this.client.send(command);
+      const moderationLabels = (response.ModerationLabels || []).map((l) => ({
+        name: l.Name || '',
+        confidence: l.Confidence || 0,
         parentName: l.ParentName,
       }));
 
       const flags = this.extractFlags(moderationLabels);
-
-      return {
-        isApproved: flags.length === 0,
-        labels: [],
-        moderationLabels,
-        flags,
-      };
+      return { isApproved: flags.length === 0, labels: [], moderationLabels, flags };
     } catch (error) {
       this.logger.error('Rekognition moderation failed', error);
       return this.mockModeration();
     }
   }
 
-  async detectLabels(s3Key: string): Promise<{ name: string; confidence: number }[]> {
-    if (!this.accessKeyId || this.accessKeyId === 'your_access_key') {
-      return [{ name: 'Scene', confidence: 99 }];
-    }
+  async detectFaces(s3Key: string): Promise<{ count: number; hasFaces: boolean; boundingBoxes: any[] }> {
+    if (!this.client) return { count: 0, hasFaces: false, boundingBoxes: [] };
 
     try {
-      const response = await fetch(`https://rekognition.${this.region}.amazonaws.com`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-amz-json-1.1',
-          'X-Amz-Target': 'RekognitionService.DetectLabels',
-        },
-        body: JSON.stringify({
-          Image: { S3Object: { Bucket: this.bucket, Name: s3Key } },
-          MaxLabels: 10,
-          MinConfidence: 70,
-        }),
+      const command = new DetectFacesCommand({
+        Image: { S3Object: { Bucket: this.bucket, Name: s3Key } },
+        Attributes: ['DEFAULT'],
       });
+      const response = await this.client.send(command);
+      const faces = response.FaceDetails || [];
+      return {
+        count: faces.length,
+        hasFaces: faces.length > 0,
+        boundingBoxes: faces.map((f) => f.BoundingBox),
+      };
+    } catch (error) {
+      this.logger.error('Rekognition face detection failed', error);
+      return { count: 0, hasFaces: false, boundingBoxes: [] };
+    }
+  }
 
-      const data = await response.json();
-      return (data.Labels || []).map((l: any) => ({ name: l.Name, confidence: l.Confidence }));
+  async detectLabels(s3Key: string): Promise<{ name: string; confidence: number }[]> {
+    if (!this.client) return [];
+
+    try {
+      const command = new DetectLabelsCommand({
+        Image: { S3Object: { Bucket: this.bucket, Name: s3Key } },
+        MaxLabels: 10,
+        MinConfidence: 70,
+      });
+      const response = await this.client.send(command);
+      return (response.Labels || []).map((l) => ({ name: l.Name || '', confidence: l.Confidence || 0 }));
     } catch (error) {
       this.logger.error('Rekognition label detection failed', error);
       return [];
     }
   }
 
-  async detectFaces(s3Key: string): Promise<{ count: number; hasFaces: boolean }> {
-    if (!this.accessKeyId || this.accessKeyId === 'your_access_key') {
-      return { count: 0, hasFaces: false };
-    }
-
-    try {
-      const response = await fetch(`https://rekognition.${this.region}.amazonaws.com`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-amz-json-1.1',
-          'X-Amz-Target': 'RekognitionService.DetectFaces',
-        },
-        body: JSON.stringify({
-          Image: { S3Object: { Bucket: this.bucket, Name: s3Key } },
-          Attributes: ['DEFAULT'],
-        }),
-      });
-
-      const data = await response.json();
-      const count = (data.FaceDetails || []).length;
-      return { count, hasFaces: count > 0 };
-    } catch (error) {
-      this.logger.error('Rekognition face detection failed', error);
-      return { count: 0, hasFaces: false };
-    }
-  }
-
-  private extractFlags(moderationLabels: { name: string; confidence: number; parentName?: string }[]): string[] {
+  private extractFlags(moderationLabels: { name: string; confidence: number }[]): string[] {
     const flags: string[] = [];
     for (const label of moderationLabels) {
       const name = label.name.toLowerCase();

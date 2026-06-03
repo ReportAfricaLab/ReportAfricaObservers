@@ -1,153 +1,108 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { TranscribeClient, StartTranscriptionJobCommand, GetTranscriptionJobCommand } from '@aws-sdk/client-transcribe';
+import { TranslateClient, TranslateTextCommand } from '@aws-sdk/client-translate';
 
-// Supported African languages for transcription
 const LANGUAGE_MAP: Record<string, string> = {
-  en: 'en-US',
-  yo: 'en-US', // Yoruba — fallback to English, post-process
-  ha: 'en-US', // Hausa — fallback
-  ig: 'en-US', // Igbo — fallback
-  sw: 'sw-KE', // Swahili (Kenya)
-  zu: 'en-ZA', // Zulu — use South African English
-  af: 'af-ZA', // Afrikaans
-  fr: 'fr-FR', // French (Rwanda, etc.)
+  en: 'en-US', yo: 'en-US', ha: 'en-US', ig: 'en-US',
+  sw: 'sw-KE', zu: 'en-ZA', af: 'af-ZA', fr: 'fr-FR',
 };
 
 @Injectable()
 export class VoiceService {
   private readonly logger = new Logger(VoiceService.name);
-  private readonly region: string;
-  private readonly accessKeyId: string;
-  private readonly secretAccessKey: string;
+  private readonly transcribeClient: TranscribeClient | null;
+  private readonly translateClient: TranslateClient | null;
   private readonly s3Bucket: string;
 
   constructor(private readonly config: ConfigService) {
-    this.region = this.config.get('AWS_REGION', 'us-east-1');
-    this.accessKeyId = this.config.get('AWS_ACCESS_KEY_ID', '');
-    this.secretAccessKey = this.config.get('AWS_SECRET_ACCESS_KEY', '');
-    this.s3Bucket = this.config.get('AWS_S3_BUCKET', 'reportafrica-uploads');
+    const accessKeyId = this.config.get('AWS_ACCESS_KEY_ID', '');
+    const secretAccessKey = this.config.get('AWS_SECRET_ACCESS_KEY', '');
+    const region = this.config.get('AWS_REGION', 'eu-west-1');
+    this.s3Bucket = this.config.get('AWS_S3_BUCKET', 'reportafrica-media-prod');
+
+    if (accessKeyId && secretAccessKey) {
+      const credentials = { accessKeyId, secretAccessKey };
+      this.transcribeClient = new TranscribeClient({ region, credentials });
+      this.translateClient = new TranslateClient({ region, credentials });
+    } else {
+      this.transcribeClient = null;
+      this.translateClient = null;
+    }
+  }
+
+  async processVoiceNote(audioUrl: string, language = 'en'): Promise<{ originalText: string; englishText: string; language: string; confidence: number }> {
+    const transcription = await this.transcribeAudio(audioUrl, language);
+    let englishText = transcription.text;
+
+    if (language !== 'en' && transcription.text) {
+      englishText = await this.translateToEnglish(transcription.text, language);
+    }
+
+    return { originalText: transcription.text, englishText, language, confidence: transcription.confidence };
   }
 
   async transcribeAudio(audioUrl: string, language = 'en'): Promise<{ text: string; confidence: number; language: string }> {
-    const languageCode = LANGUAGE_MAP[language] || 'en-US';
-    const jobName = `transcribe_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-
-    if (!this.accessKeyId || this.accessKeyId === 'your_access_key') {
-      // Dev mode — return mock
-      return { text: '[Mock transcription] This is a test voice note.', confidence: 0.95, language };
+    if (!this.transcribeClient) {
+      return { text: '[Mock] Voice transcription not configured.', confidence: 0.95, language };
     }
 
-    try {
-      // Start transcription job
-      await fetch(`https://transcribe.${this.region}.amazonaws.com`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-amz-json-1.1',
-          'X-Amz-Target': 'Transcribe.StartTranscriptionJob',
-        },
-        body: JSON.stringify({
-          TranscriptionJobName: jobName,
-          LanguageCode: languageCode,
-          Media: { MediaFileUri: audioUrl },
-          OutputBucketName: this.s3Bucket,
-          OutputKey: `transcriptions/${jobName}.json`,
-          Settings: {
-            ShowSpeakerLabels: false,
-            MaxSpeakerLabels: 1,
-          },
-        }),
-      });
+    const languageCode = LANGUAGE_MAP[language] || 'en-US';
+    const jobName = `ra_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
-      // Poll for completion (max 60 seconds)
-      const result = await this.pollForResult(jobName);
-      return result;
+    try {
+      await this.transcribeClient.send(new StartTranscriptionJobCommand({
+        TranscriptionJobName: jobName,
+        LanguageCode: languageCode,
+        Media: { MediaFileUri: audioUrl },
+        OutputBucketName: this.s3Bucket,
+        OutputKey: `transcriptions/${jobName}.json`,
+      }));
+
+      return await this.pollForResult(jobName, language);
     } catch (error) {
       this.logger.error('Transcription failed', error);
       return { text: '', confidence: 0, language };
     }
   }
 
-  // Simplified: translate text to English using Amazon Translate
   async translateToEnglish(text: string, sourceLanguage: string): Promise<string> {
-    if (sourceLanguage === 'en' || !text) return text;
-
-    if (!this.accessKeyId || this.accessKeyId === 'your_access_key') {
-      return `[Translated from ${sourceLanguage}] ${text}`;
-    }
+    if (!text || sourceLanguage === 'en' || !this.translateClient) return text;
 
     try {
-      const response = await fetch(`https://translate.${this.region}.amazonaws.com`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-amz-json-1.1',
-          'X-Amz-Target': 'AWSShineFrontendService_20170701.TranslateText',
-        },
-        body: JSON.stringify({
-          Text: text,
-          SourceLanguageCode: sourceLanguage === 'sw' ? 'sw' : 'auto',
-          TargetLanguageCode: 'en',
-        }),
-      });
-
-      const data = await response.json();
-      return data.TranslatedText || text;
+      const response = await this.translateClient.send(new TranslateTextCommand({
+        Text: text,
+        SourceLanguageCode: sourceLanguage === 'sw' ? 'sw' : 'auto',
+        TargetLanguageCode: 'en',
+      }));
+      return response.TranslatedText || text;
     } catch (error) {
       this.logger.error('Translation failed', error);
       return text;
     }
   }
 
-  // Process voice note: transcribe + translate
-  async processVoiceNote(audioUrl: string, language = 'en'): Promise<{ originalText: string; englishText: string; language: string; confidence: number }> {
-    const transcription = await this.transcribeAudio(audioUrl, language);
-
-    let englishText = transcription.text;
-    if (language !== 'en' && transcription.text) {
-      englishText = await this.translateToEnglish(transcription.text, language);
-    }
-
-    return {
-      originalText: transcription.text,
-      englishText,
-      language,
-      confidence: transcription.confidence,
-    };
-  }
-
-  private async pollForResult(jobName: string, maxAttempts = 12): Promise<{ text: string; confidence: number; language: string }> {
+  private async pollForResult(jobName: string, language: string, maxAttempts = 12): Promise<{ text: string; confidence: number; language: string }> {
     for (let i = 0; i < maxAttempts; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5s between polls
+      await new Promise((r) => setTimeout(r, 5000));
 
       try {
-        const response = await fetch(`https://transcribe.${this.region}.amazonaws.com`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-amz-json-1.1',
-            'X-Amz-Target': 'Transcribe.GetTranscriptionJob',
-          },
-          body: JSON.stringify({ TranscriptionJobName: jobName }),
-        });
-
-        const data = await response.json();
-        const status = data.TranscriptionJob?.TranscriptionJobStatus;
+        const response = await this.transcribeClient!.send(new GetTranscriptionJobCommand({ TranscriptionJobName: jobName }));
+        const status = response.TranscriptionJob?.TranscriptionJobStatus;
 
         if (status === 'COMPLETED') {
-          const transcriptUri = data.TranscriptionJob?.Transcript?.TranscriptFileUri;
-          if (transcriptUri) {
-            const transcriptRes = await fetch(transcriptUri);
-            const transcript = await transcriptRes.json();
+          const uri = response.TranscriptionJob?.Transcript?.TranscriptFileUri;
+          if (uri) {
+            const res = await fetch(uri);
+            const transcript = await res.json();
             const text = transcript.results?.transcripts?.[0]?.transcript || '';
-            const confidence = transcript.results?.items?.[0]?.alternatives?.[0]?.confidence || 0;
-            return { text, confidence: Number(confidence), language: data.TranscriptionJob?.LanguageCode };
+            return { text, confidence: 0.9, language };
           }
         } else if (status === 'FAILED') {
-          return { text: '', confidence: 0, language: '' };
+          return { text: '', confidence: 0, language };
         }
-      } catch {
-        // Continue polling
-      }
+      } catch { /* continue polling */ }
     }
-
-    return { text: '', confidence: 0, language: '' };
+    return { text: '', confidence: 0, language };
   }
 }

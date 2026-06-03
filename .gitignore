@@ -24,3 +24,8 @@ infra/terraform/*.tfvars
 infra/terraform/*.pem
 infra/terraform/.terraform/
 infra/terraform/*.tfstate*
+
+# Env scripts with secrets
+infra/scripts/*-env*.json
+infra/scripts/add-sentry.json
+infra/scripts/create-env-file.json

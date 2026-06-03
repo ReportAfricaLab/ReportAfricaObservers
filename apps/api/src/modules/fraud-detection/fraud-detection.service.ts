@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { CampaignEntity } from '../../database/entities';
 import { UserEntity } from '../../database/entities';
+import { AiService } from '../ai/ai.service';
 
 export interface FraudScore {
   score: number; // 0-100, higher = more suspicious
@@ -15,7 +16,6 @@ export interface FraudScore {
 @Injectable()
 export class FraudDetectionService {
   private readonly logger = new Logger(FraudDetectionService.name);
-  private readonly openaiKey: string;
 
   constructor(
     @InjectRepository(CampaignEntity)
@@ -23,9 +23,8 @@ export class FraudDetectionService {
     @InjectRepository(UserEntity)
     private readonly userRepo: Repository<UserEntity>,
     private readonly config: ConfigService,
-  ) {
-    this.openaiKey = this.config.get('OPENAI_API_KEY', '');
-  }
+    private readonly ai: AiService,
+  ) {}
 
   async analyzeCampaign(campaignId: string): Promise<FraudScore> {
     const campaign = await this.campaignRepo.findOne({ where: { id: campaignId }, relations: ['author'] });
@@ -42,10 +41,8 @@ export class FraudDetectionService {
     score += this.checkDocuments(campaign, flags);
     score += this.checkUserHistory(campaign.author, flags);
 
-    // AI analysis (if OpenAI key available)
-    if (this.openaiKey) {
-      score += await this.aiAnalysis(campaign, flags);
-    }
+    // AI analysis
+    score += await this.aiAnalysis(campaign, flags);
 
     score = Math.min(100, Math.max(0, score));
     const level = score >= 75 ? 'critical' : score >= 50 ? 'high' : score >= 25 ? 'medium' : 'low';
@@ -118,37 +115,18 @@ export class FraudDetectionService {
 
   private async aiAnalysis(campaign: CampaignEntity, flags: string[]): Promise<number> {
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.openaiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [{
-            role: 'system',
-            content: 'You are a fraud detection system. Analyze this donation campaign and respond with ONLY a JSON object: {"suspicious": true/false, "reason": "brief reason"}',
-          }, {
-            role: 'user',
-            content: `Title: ${campaign.title}\nCategory: ${campaign.category}\nTarget: ${campaign.currency} ${campaign.targetAmount}\nDescription: ${campaign.description?.substring(0, 500)}\nHas documents: ${(campaign.documents?.length || 0) > 0}\nHas media: ${(campaign.media?.length || 0) > 0}`,
-          }],
-          max_tokens: 100,
-          temperature: 0.1,
-        }),
-      });
+      const systemPrompt = 'You are a fraud detection system. Analyze this donation campaign and respond with ONLY a JSON object: {"suspicious": true/false, "reason": "brief reason"}';
+      const userMessage = `Title: ${campaign.title}\nCategory: ${campaign.category}\nTarget: ${campaign.currency} ${campaign.targetAmount}\nDescription: ${campaign.description?.substring(0, 500)}\nHas documents: ${(campaign.documents?.length || 0) > 0}\nHas media: ${(campaign.media?.length || 0) > 0}`;
 
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || '';
-      const parsed = JSON.parse(content);
-
-      if (parsed.suspicious) {
-        flags.push(`ai_flagged: ${parsed.reason}`);
-        return 20;
+      const response = await this.ai.chat(systemPrompt, userMessage);
+      if (response) {
+        const parsed = JSON.parse(response);
+        if (parsed.suspicious) {
+          flags.push(`ai_flagged: ${parsed.reason}`);
+          return 20;
+        }
       }
-    } catch {
-      // AI analysis failed — skip silently
-    }
+    } catch { /* AI analysis failed — skip */ }
     return 0;
   }
 }
