@@ -1,0 +1,6 @@
+{
+  "commands": [
+    "cd /home/ec2-user/reportafrica && git log --oneline -3",
+    "grep -n 'IsIn' /home/ec2-user/reportafrica/apps/api/src/modules/upload/upload.controller.ts"
+  ]
+}

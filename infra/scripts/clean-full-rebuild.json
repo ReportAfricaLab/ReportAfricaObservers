@@ -1,0 +1,12 @@
+{
+  "commands": [
+    "docker stop reportafrica-api && docker rm reportafrica-api",
+    "docker rmi reportafrica-api 2>/dev/null || true",
+    "docker system prune -f",
+    "cd /home/ec2-user/reportafrica && rm -rf apps/api/dist",
+    "cd /home/ec2-user/reportafrica && docker build --no-cache -t reportafrica-api -f apps/api/Dockerfile .",
+    "docker run -d --name reportafrica-api --restart always -p 3001:3001 --env-file /home/ec2-user/.env.production reportafrica-api",
+    "sleep 15",
+    "docker exec reportafrica-api cat /app/dist/modules/upload/upload.controller.js | grep -i 'audio'"
+  ]
+}

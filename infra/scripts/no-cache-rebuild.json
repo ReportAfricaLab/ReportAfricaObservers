@@ -1,0 +1,10 @@
+{
+  "commands": [
+    "cd /home/ec2-user/reportafrica && grep 'IsIn' apps/api/src/modules/upload/upload.controller.ts",
+    "cd /home/ec2-user/reportafrica && docker build --no-cache -t reportafrica-api -f apps/api/Dockerfile .",
+    "docker stop reportafrica-api && docker rm reportafrica-api",
+    "docker run -d --name reportafrica-api --restart always -p 3001:3001 --env-file /home/ec2-user/.env.production reportafrica-api",
+    "sleep 15",
+    "curl -s http://localhost:3001/api/v1/health"
+  ]
+}

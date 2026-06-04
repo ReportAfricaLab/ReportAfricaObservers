@@ -1,0 +1,5 @@
+{
+  "commands": [
+    "tail -20 /tmp/build.log"
+  ]
+}

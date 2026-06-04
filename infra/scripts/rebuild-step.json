@@ -1,0 +1,9 @@
+{
+  "commands": [
+    "docker pull node:18-alpine",
+    "cd /home/ec2-user/reportafrica && docker build -t reportafrica-api -f apps/api/Dockerfile .",
+    "docker run -d --name reportafrica-api --restart always -p 3001:3001 --env-file /home/ec2-user/.env.production reportafrica-api",
+    "sleep 15",
+    "curl -s http://localhost:3001/api/v1/health"
+  ]
+}

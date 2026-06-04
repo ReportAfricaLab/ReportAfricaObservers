@@ -1,0 +1,6 @@
+{
+  "commands": [
+    "docker ps -a",
+    "docker images"
+  ]
+}

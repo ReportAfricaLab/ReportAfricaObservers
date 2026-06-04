@@ -1,0 +1,6 @@
+{
+  "commands": [
+    "cd /home/ec2-user/reportafrica && nohup bash -c 'docker build -t reportafrica-api -f apps/api/Dockerfile . && docker run -d --name reportafrica-api --restart always -p 3001:3001 --env-file /home/ec2-user/.env.production reportafrica-api' > /tmp/build.log 2>&1 &",
+    "echo 'Build started in background. Check /tmp/build.log for progress.'"
+  ]
+}
