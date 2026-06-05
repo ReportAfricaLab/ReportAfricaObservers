@@ -30,6 +30,22 @@ export class AiService {
     return null;
   }
 
+  async chatPlain(systemPrompt: string, userMessage: string): Promise<string | null> {
+    // Try Gemini first (no JSON format)
+    if (this.geminiKey) {
+      const result = await this.tryGeminiPlain(systemPrompt, userMessage);
+      if (result) return result;
+    }
+
+    // Fallback to Groq (no JSON format)
+    if (this.groqKey) {
+      const result = await this.tryGroqPlain(systemPrompt, userMessage);
+      if (result) return result;
+    }
+
+    return null;
+  }
+
   private async tryGemini(systemPrompt: string, userMessage: string): Promise<string | null> {
     try {
       const response = await fetch(
@@ -83,6 +99,52 @@ export class AiService {
       return data.choices?.[0]?.message?.content || null;
     } catch (error) {
       this.logger.warn('Groq error', error);
+      return null;
+    }
+  }
+
+  private async tryGeminiPlain(systemPrompt: string, userMessage: string): Promise<string | null> {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: [{ parts: [{ text: userMessage }] }],
+            generationConfig: { temperature: 0.1 },
+          }),
+        },
+      );
+
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async tryGroqPlain(systemPrompt: string, userMessage: string): Promise<string | null> {
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.groqKey}` },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userMessage },
+          ],
+          temperature: 0.1,
+        }),
+      });
+
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content?.trim() || null;
+    } catch {
       return null;
     }
   }

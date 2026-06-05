@@ -29,10 +29,8 @@ export class VoiceController {
 
   @Post('translate')
   async translate(@Body() dto: TranslateDto) {
-    const targetLang = dto.targetLanguage || 'en';
-
-    const response = await this.ai.chat(
-      'You are a translator. Translate the following text to English. Return ONLY the translated text, nothing else. No quotes, no explanation.',
+    const response = await this.ai.chatPlain(
+      'You are a translator. Translate the following text to English. Return ONLY the translated text, nothing else.',
       dto.text,
     );
 
