@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import * as helmet from 'helmet';
+const cookieParser = require('cookie-parser');
 import { AppModule } from './app.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { initSentry, SentryExceptionFilter } from './common/sentry';
@@ -14,6 +15,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: isProduction ? ['error', 'warn', 'log'] : ['error', 'warn', 'log', 'debug', 'verbose'],
   });
+
+  // Cookie parser (for httpOnly refresh token)
+  app.use(cookieParser());
 
   // Security headers
   app.use(helmet.default({

@@ -1,0 +1,7 @@
+{
+  "commands": [
+    "curl -s -o /dev/null -w '%{http_code}' --max-time 10 https://api.groq.com 2>&1",
+    "curl -s -o /dev/null -w '%{http_code}' --max-time 10 https://generativelanguage.googleapis.com 2>&1",
+    "curl -s -o /dev/null -w '%{http_code}' --max-time 10 https://google.com 2>&1"
+  ]
+}

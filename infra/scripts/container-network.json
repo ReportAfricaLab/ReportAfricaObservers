@@ -1,0 +1,6 @@
+{
+  "commands": [
+    "docker exec reportafrica-api node -e \"fetch('https://api.groq.com').then(r => console.log('Groq:', r.status)).catch(e => console.log('Groq error:', e.message))\"",
+    "docker exec reportafrica-api node -e \"fetch('https://generativelanguage.googleapis.com').then(r => console.log('Gemini:', r.status)).catch(e => console.log('Gemini error:', e.message))\""
+  ]
+}

@@ -44,7 +44,7 @@ export default function RegisterPage() {
       const { confirmPassword, ...submitData } = form;
       const phone = form.phone ? `${selectedCountry?.dial}${form.phone}` : undefined;
       const data = await api.auth.register({ ...submitData, phone });
-      login(data.user, data.token);
+      login(data.user, data.token, data.refreshToken);
       router.push('/feed');
     } catch (err: any) {
       setError(err.message || 'Registration failed');
@@ -94,7 +94,7 @@ export default function RegisterPage() {
   const handleGoogleToken = async (idToken: string) => {
     try {
       const data = await api.auth.oauth('google', idToken, form.country);
-      login(data.user, data.token);
+      login(data.user, data.token, data.refreshToken);
       router.push('/feed');
     } catch (err: any) {
       setError(err.message || 'Google sign-up failed');

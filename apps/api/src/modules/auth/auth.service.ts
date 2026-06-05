@@ -1,5 +1,8 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException, Inject, Optional } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { UsersService } from '../users/users.service';
@@ -22,57 +25,92 @@ interface LoginDto {
 
 @Injectable()
 export class AuthService {
+  private readonly refreshSecret: string;
+
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-  ) {}
+    private readonly config: ConfigService,
+    @Optional() @Inject(CACHE_MANAGER) private readonly cache?: Cache,
+  ) {
+    this.refreshSecret = this.config.get('JWT_SECRET', 'dev-secret') + '-refresh';
+  }
 
   async register(dto: RegisterDto) {
     const existingUser = await this.usersService.findByEmail(dto.email);
-    if (existingUser) {
-      throw new ConflictException('Email already registered');
-    }
+    if (existingUser) throw new ConflictException('Email already registered');
 
     const existingUsername = await this.usersService.findByUsername(dto.username);
-    if (existingUsername) {
-      throw new ConflictException('Username already taken');
-    }
+    if (existingUsername) throw new ConflictException('Username already taken');
 
     const hashedPassword = await bcrypt.hash(dto.password, 12);
-    const user = await this.usersService.create({
-      ...dto,
-      password: hashedPassword,
-    });
+    const user = await this.usersService.create({ ...dto, password: hashedPassword });
 
-    const token = this.generateToken(user.id, user.email, user.country);
-    return { user: { id: user.id, email: user.email, username: user.username, country: user.country }, token };
+    const tokens = await this.generateTokens(user.id, user.email, user.country);
+    return { user: { id: user.id, email: user.email, username: user.username, country: user.country }, ...tokens };
   }
 
   async login(dto: LoginDto) {
     const user = await this.usersService.findByEmailWithPassword(dto.email);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+    if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+    if (!isPasswordValid) throw new UnauthorizedException('Invalid credentials');
 
-    const token = this.generateToken(user.id, user.email, user.country);
-    return { user: { id: user.id, email: user.email, username: user.username, country: user.country }, token };
+    const tokens = await this.generateTokens(user.id, user.email, user.country);
+    return { user: { id: user.id, email: user.email, username: user.username, country: user.country }, ...tokens };
   }
 
-  private generateToken(userId: string, email: string, country: string): string {
-    return this.jwtService.sign({ sub: userId, email, country });
+  async refreshToken(refreshToken: string) {
+    try {
+      // Verify refresh token
+      const payload = this.jwtService.verify(refreshToken, { secret: this.refreshSecret });
+
+      // Check if token is blacklisted
+      if (this.cache) {
+        const blacklisted = await this.cache.get(`bl:${refreshToken}`);
+        if (blacklisted) throw new UnauthorizedException('Token revoked');
+      }
+
+      // Check if user's all tokens are invalidated
+      if (this.cache) {
+        const invalidatedAt = await this.cache.get<number>(`inv:${payload.sub}`);
+        if (invalidatedAt && payload.iat * 1000 < invalidatedAt) {
+          throw new UnauthorizedException('All sessions revoked');
+        }
+      }
+
+      // Issue new access token
+      const accessToken = this.generateAccessToken(payload.sub, payload.email, payload.country);
+      return { token: accessToken };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  async logout(refreshToken: string) {
+    if (!refreshToken) return { message: 'Logged out' };
+
+    // Blacklist the refresh token in Redis (expires when token would expire)
+    if (this.cache) {
+      await this.cache.set(`bl:${refreshToken}`, '1', 7 * 24 * 60 * 60 * 1000); // 7 days
+    }
+
+    return { message: 'Logged out successfully' };
+  }
+
+  async logoutAllDevices(userId: string) {
+    // Store timestamp — any refresh token issued before this is invalid
+    if (this.cache) {
+      await this.cache.set(`inv:${userId}`, Date.now(), 7 * 24 * 60 * 60 * 1000);
+    }
+    return { message: 'All sessions revoked' };
   }
 
   async oauthLogin(provider: string, token: string, country?: string) {
-    // Verify token with provider
     const profile = await this.verifyOAuthToken(provider, token);
     if (!profile) throw new UnauthorizedException('Invalid OAuth token');
 
-    // Find or create user
     let user = await this.usersService.findByEmail(profile.email);
     if (!user) {
       const username = profile.email.split('@')[0] + '_' + Math.random().toString(36).substring(2, 6);
@@ -80,24 +118,60 @@ export class AuthService {
         email: profile.email,
         username,
         displayName: profile.name || username,
-        password: '', // OAuth users don't have passwords
+        password: '',
         country: country || 'NG',
       });
     }
 
-    const jwt = this.generateToken(user.id, user.email, user.country);
-    return { user: { id: user.id, email: user.email, username: user.username, country: user.country }, token: jwt };
+    const tokens = await this.generateTokens(user.id, user.email, user.country);
+    return { user: { id: user.id, email: user.email, username: user.username, country: user.country }, ...tokens };
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) return { message: 'If that email exists, a reset link has been sent' };
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 3600000);
+    await this.usersService.setPasswordResetToken(user.id, resetToken, resetExpires);
+
+    return { message: 'If that email exists, a reset link has been sent' };
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    const user = await this.usersService.findByResetToken(token);
+    if (!user) throw new BadRequestException('Invalid or expired reset token');
+    if (user.passwordResetExpires < new Date()) throw new BadRequestException('Reset token has expired');
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    await this.usersService.updatePassword(user.id, hashedPassword);
+
+    // Invalidate all existing sessions after password reset
+    await this.logoutAllDevices(user.id);
+
+    return { message: 'Password reset successful. You can now login.' };
+  }
+
+  private async generateTokens(userId: string, email: string, country: string) {
+    const accessToken = this.generateAccessToken(userId, email, country);
+    const refreshToken = this.jwtService.sign(
+      { sub: userId, email, country },
+      { secret: this.refreshSecret, expiresIn: '7d' },
+    );
+    return { token: accessToken, refreshToken };
+  }
+
+  private generateAccessToken(userId: string, email: string, country: string): string {
+    return this.jwtService.sign({ sub: userId, email, country });
   }
 
   private async verifyOAuthToken(provider: string, token: string): Promise<{ email: string; name?: string } | null> {
     try {
       if (provider === 'google') {
-        // Try as ID token first
         let res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${token}`);
         let data = await res.json();
         if (data.email) return { email: data.email, name: data.name };
 
-        // Fallback: try as access token
         res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -110,36 +184,5 @@ export class AuthService {
       }
     } catch {}
     return null;
-  }
-
-  async forgotPassword(email: string) {
-    const user = await this.usersService.findByEmail(email);
-    // Always return success to prevent email enumeration
-    if (!user) return { message: 'If that email exists, a reset link has been sent' };
-
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetExpires = new Date(Date.now() + 3600000); // 1 hour
-
-    await this.usersService.setPasswordResetToken(user.id, resetToken, resetExpires);
-
-    // TODO: Send email with reset link (integrate email service later)
-    // For now, log the token (remove in production with real email service)
-    console.log(`Password reset token for ${email}: ${resetToken}`);
-
-    return { message: 'If that email exists, a reset link has been sent' };
-  }
-
-  async resetPassword(token: string, newPassword: string) {
-    const user = await this.usersService.findByResetToken(token);
-    if (!user) throw new BadRequestException('Invalid or expired reset token');
-
-    if (user.passwordResetExpires < new Date()) {
-      throw new BadRequestException('Reset token has expired');
-    }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 12);
-    await this.usersService.updatePassword(user.id, hashedPassword);
-
-    return { message: 'Password reset successful. You can now login.' };
   }
 }

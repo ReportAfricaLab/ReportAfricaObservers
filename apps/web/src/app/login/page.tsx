@@ -20,7 +20,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const data = await api.auth.login({ email, password });
-      login(data.user, data.token);
+      login(data.user, data.token, data.refreshToken);
       router.push('/feed');
     } catch (err: any) {
       setError(err.message || 'Login failed');
@@ -77,7 +77,7 @@ export default function LoginPage() {
   const handleGoogleToken = async (idToken: string) => {
     try {
       const data = await api.auth.oauth('google', idToken);
-      login(data.user, data.token);
+      login(data.user, data.token, data.refreshToken);
       router.push('/feed');
     } catch (err: any) {
       setError(err.message || 'Google sign-in failed');

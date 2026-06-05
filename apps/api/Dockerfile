@@ -17,12 +17,17 @@ RUN npm run build --workspace=@reportafrica/api
 FROM node:20-alpine AS runner
 WORKDIR /app
 
+RUN npm install -g pm2
+
 ENV NODE_ENV=production
 
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 
+# PM2 ecosystem config for cluster mode
+RUN echo '{"apps":[{"name":"reportafrica-api","script":"dist/main.js","instances":2,"exec_mode":"cluster","max_memory_restart":"400M"}]}' > ecosystem.config.json
+
 EXPOSE 3001
 
-CMD ["node", "dist/main"]
+CMD ["pm2-runtime", "ecosystem.config.json"]

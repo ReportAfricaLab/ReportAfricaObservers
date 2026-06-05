@@ -1,0 +1,6 @@
+{
+  "commands": [
+    "docker exec reportafrica-api grep -c 'chatPlain' /app/dist/modules/ai/ai.service.js",
+    "docker exec reportafrica-api grep -c 'tryGroqPlain' /app/dist/modules/ai/ai.service.js"
+  ]
+}
