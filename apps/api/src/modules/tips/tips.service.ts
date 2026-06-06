@@ -41,6 +41,14 @@ function getPacksForCurrency(currency: string): { value: number; fee: number; co
   });
 }
 
+// Get currency for country - USD fallback for unsupported
+function getCurrencyForCountry(country: string): string {
+  const supported = COUNTRY_CURRENCY[country];
+  const paystackSupported = ['NGN', 'GHS', 'KES', 'ZAR', 'UGX', 'RWF', 'XOF', 'XAF', 'EGP', 'USD'];
+  if (supported && paystackSupported.includes(supported)) return supported;
+  return 'USD'; // Fallback for unsupported countries
+}
+
 const PLATFORM_CUT = 0.20; // 20%
 
 @Injectable()
@@ -62,7 +70,7 @@ export class TipsService {
   // === BUY TIP PACK ===
 
   async buyPack(userId: string | null, dto: { packIndex: number; email: string; country: string }) {
-    const currency = COUNTRY_CURRENCY[dto.country] || 'NGN';
+    const currency = getCurrencyForCountry(dto.country);
     const packs = getPacksForCurrency(currency);
     if (dto.packIndex < 0 || dto.packIndex >= packs.length) {
       throw new BadRequestException('Invalid pack selection');
@@ -134,8 +142,33 @@ export class TipsService {
     const reporter = await this.userRepo.findOne({ where: { id: report.authorId } });
     if (!reporter) throw new NotFoundException('Reporter not found');
 
-    const tipperCurrency = tipper.tipCurrency || COUNTRY_CURRENCY[tipper.country] || 'NGN';
-    const reporterCurrency = COUNTRY_CURRENCY[reporter.country] || 'NGN';
+    const tipperCurrency = tipper.tipCurrency || getCurrencyForCountry(tipper.country);
+
+    // Reporter MUST have bank details to receive tips
+    if (!reporter.bankAccountNumber || !reporter.bankCode) {
+      // Still deduct from tipper but hold tip until reporter adds bank
+      const tip = this.tipRepo.create({
+        reportId: dto.reportId,
+        reporterId: report.authorId,
+        tipperId,
+        amount: dto.amount,
+        currency: tipperCurrency,
+        message: dto.message,
+        status: 'pending_bank',
+        paymentReference: `TIP_${Date.now()}`,
+      });
+      await this.tipRepo.save(tip);
+
+      await this.notifications.sendToUser(report.authorId, {
+        title: '💰 Tip pending — add bank details!',
+        body: `You received a tip but need to add your bank details to get paid.`,
+        data: { type: 'tip_pending', reportId: dto.reportId },
+      });
+
+      return { status: 'pending_bank', message: 'Tip sent! Reporter needs to add bank details to receive it.', remainingBalance: tipper.tipBalance - dto.amount };
+    }
+
+    const reporterCurrency = getCurrencyForCountry(reporter.country);
     const isCrossCurrency = tipperCurrency !== reporterCurrency;
 
     // Check if cross-currency is supported
@@ -178,26 +211,24 @@ export class TipsService {
     });
     await this.tipRepo.save(tip);
 
-    // Pay reporter via KoraPay (if bank details set)
-    if (reporter.bankAccountNumber && reporter.bankCode) {
-      try {
-        await this.koraPayService.initializeSplitPayment({
-          amount: payoutAmount,
-          currency: payoutCurrency,
-          customerEmail: reporter.email,
-          customerName: reporter.displayName,
-          reference: this.koraPayService.generateReference(),
-          reporterBankAccount: {
-            bankCode: reporter.bankCode,
-            accountNumber: reporter.bankAccountNumber,
-            accountName: reporter.bankAccountName,
-          },
-          platformSplitPercent: 0,
-          metadata: { tipId: tip.id, reporterId: reporter.id, crossCurrency: isCrossCurrency, conversionRate },
-        });
-      } catch {
-        // If payout fails, still record earnings for manual payout later
-      }
+    // Pay reporter via KoraPay (bank details confirmed above)
+    try {
+      await this.koraPayService.initializeSplitPayment({
+        amount: payoutAmount,
+        currency: payoutCurrency,
+        customerEmail: reporter.email,
+        customerName: reporter.displayName,
+        reference: this.koraPayService.generateReference(),
+        reporterBankAccount: {
+          bankCode: reporter.bankCode,
+          accountNumber: reporter.bankAccountNumber,
+          accountName: reporter.bankAccountName,
+        },
+        platformSplitPercent: 0,
+        metadata: { tipId: tip.id, reporterId: reporter.id, crossCurrency: isCrossCurrency, conversionRate },
+      });
+    } catch {
+      // If payout fails, earnings are still recorded
     }
 
     // Record earnings in reporter's currency

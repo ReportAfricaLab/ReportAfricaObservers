@@ -5,6 +5,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { CampaignEntity, DonationEntity } from '../../database/entities';
 import { PaystackService } from './paystack.service';
+import { KoraPayService } from '../payments/korapay.service';
 import { FraudDetectionService } from '../fraud-detection/fraud-detection.service';
 import { CreateCampaignDto, InitiateDonationDto } from './dto/donations.dto';
 
@@ -16,6 +17,7 @@ export class DonationsService {
     @InjectRepository(DonationEntity)
     private readonly donationRepo: Repository<DonationEntity>,
     private readonly paystackService: PaystackService,
+    private readonly koraPayService: KoraPayService,
     @Optional() private readonly fraudService?: FraudDetectionService,
     @Optional() @Inject(CACHE_MANAGER) private readonly cache?: Cache,
   ) {}
@@ -23,11 +25,18 @@ export class DonationsService {
   // === CAMPAIGNS ===
 
   async createCampaign(authorId: string, country: string, dto: CreateCampaignDto): Promise<CampaignEntity> {
+    if (!dto.agreedToPlatformFee) {
+      throw new BadRequestException('You must agree to the 15% platform fee');
+    }
+    if (!dto.beneficiaryBank || !dto.beneficiaryAccount) {
+      throw new BadRequestException('Bank details are required for campaign payout');
+    }
+
     const campaign = this.campaignRepo.create({
       ...dto,
       authorId,
       country,
-      currency: dto.currency || 'NGN',
+      currency: dto.currency || this.getCurrencyForCountry(country),
       media: dto.media || [],
       documents: dto.documents || [],
     });
@@ -167,12 +176,63 @@ export class DonationsService {
         .where('id = :id', { id: donation.campaignId })
         .execute();
 
+      // Check if target reached → auto-payout
+      await this.checkAndPayoutCampaign(donation.campaignId);
+
       return { status: 'success', donation };
     }
 
     donation.status = 'failed';
     await this.donationRepo.save(donation);
     return { status: 'failed', donation };
+  }
+
+  private async checkAndPayoutCampaign(campaignId: string) {
+    const campaign = await this.campaignRepo.findOne({ where: { id: campaignId } });
+    if (!campaign || !campaign.isActive) return;
+
+    const targetWithFee = Number(campaign.targetAmount) * 1.15; // target + 15% fee
+    if (Number(campaign.raisedAmount) < targetWithFee) return;
+
+    // Target reached! Payout 85% to campaign creator, keep 15%
+    if (!campaign.beneficiaryBank || !campaign.beneficiaryAccount) return;
+
+    const payoutAmount = Math.round(Number(campaign.raisedAmount) * 0.85);
+    const reference = this.koraPayService.generateReference();
+
+    try {
+      await this.koraPayService.initializeSplitPayment({
+        amount: payoutAmount,
+        currency: campaign.currency,
+        customerEmail: 'payout@reportafrica.com',
+        customerName: campaign.beneficiaryName || 'Campaign Beneficiary',
+        reference,
+        reporterBankAccount: {
+          bankCode: campaign.beneficiaryBank,
+          accountNumber: campaign.beneficiaryAccount,
+          accountName: campaign.beneficiaryName || '',
+        },
+        platformSplitPercent: 0, // Full amount goes to beneficiary (15% already deducted)
+        metadata: { type: 'campaign_payout', campaignId },
+      });
+
+      // Mark campaign as paid out
+      await this.campaignRepo.update(campaignId, { isActive: false, verificationLevel: 'funded_paid' });
+    } catch {
+      // Payout failed — will retry on next donation or manual intervention
+    }
+  }
+
+  private getCurrencyForCountry(country: string): string {
+    const map: Record<string, string> = {
+      NG: 'NGN', GH: 'GHS', KE: 'KES', ZA: 'ZAR', UG: 'UGX', RW: 'RWF',
+      TZ: 'TZS', ET: 'ETB', SN: 'XOF', CM: 'XAF', EG: 'EGP', MA: 'USD',
+      DZ: 'USD', TN: 'USD', CI: 'XOF', AO: 'USD', MZ: 'USD', CD: 'USD',
+      SD: 'USD', LY: 'USD', ZW: 'USD', ZM: 'USD', MW: 'USD', BJ: 'XOF',
+      TG: 'XOF', ML: 'XOF', BF: 'XOF', NE: 'XOF', SL: 'USD', LR: 'USD',
+      SO: 'USD', MG: 'USD',
+    };
+    return map[country] || 'USD';
   }
 
   async handleWebhook(event: string, data: any) {

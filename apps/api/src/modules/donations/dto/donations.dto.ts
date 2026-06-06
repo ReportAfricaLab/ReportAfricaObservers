@@ -18,7 +18,7 @@ export class CreateCampaignDto {
   targetAmount: number;
 
   @IsString()
-  @IsIn(['NGN', 'GHS', 'KES', 'ZAR', 'UGX', 'RWF'])
+  @IsIn(['NGN', 'GHS', 'KES', 'ZAR', 'UGX', 'RWF', 'USD', 'TZS', 'ETB', 'XOF', 'XAF', 'EGP'])
   @IsOptional()
   currency?: string;
 
@@ -29,6 +29,17 @@ export class CreateCampaignDto {
   @IsString()
   @IsOptional()
   beneficiaryName?: string;
+
+  // Bank details - required for payout
+  @IsString()
+  beneficiaryBank: string;
+
+  @IsString()
+  beneficiaryAccount: string;
+
+  // User must agree to 15% platform fee
+  @IsBoolean()
+  agreedToPlatformFee: boolean;
 
   @IsArray()
   @IsOptional()
