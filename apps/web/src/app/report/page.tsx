@@ -117,11 +117,15 @@ function ReportContent() {
     setComments((prev) => prev.map((c) => c.id === commentId ? { ...c, likes: (c.likes || 0) + 1 } : c));
   };
 
-  if (loading) return <div className="max-w-2xl mx-auto px-4 py-20 text-center text-gray-400">Loading...</div>;
-  if (!report) return <div className="max-w-2xl mx-auto px-4 py-20 text-center text-gray-400">Report not found</div>;
+  if (loading) return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-gray-400">Loading...</div>;
+  if (!report) return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-gray-400">Report not found</div>;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="flex gap-6">
+
+      {/* Main Content */}
+      <main className="flex-1 min-w-0 max-w-2xl space-y-6">
       {/* Report Card */}
       <div className="bg-white rounded-xl border border-gray-200 p-8">
         <div className="flex items-center gap-2 mb-4">
@@ -331,13 +335,67 @@ function ReportContent() {
           </div>
         )}
       </div>
+      </main>
+
+      {/* Right Sidebar (desktop only) */}
+      <aside className="hidden lg:block w-72 flex-shrink-0">
+        <div className="sticky top-24 space-y-4">
+
+          {/* Location */}
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <h3 className="text-sm font-bold text-gray-900 mb-2">📍 Location</h3>
+            <p className="text-xs text-gray-600">{report.city || report.state || 'Location detected'}</p>
+            <p className="text-[10px] text-gray-400 mt-1">{Number(report.latitude).toFixed(4)}, {Number(report.longitude).toFixed(4)}</p>
+            <p className="text-xs text-gray-500 mt-1">Country: {report.country}</p>
+          </div>
+
+          {/* Ad Slot */}
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <p className="text-[10px] font-medium text-gray-400 mb-2">Sponsored</p>
+            <div className="w-full h-24 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg flex items-center justify-center">
+              <p className="text-xs text-gray-400">Ad Space</p>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-2"><a href="/contact" className="text-[#0F7B6C]">Advertise here →</a></p>
+          </div>
+
+          {/* Related Reports */}
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <h3 className="text-sm font-bold text-gray-900 mb-3">📰 Related Reports</h3>
+            <p className="text-xs text-gray-400">More reports from this area coming soon</p>
+            <a href={`/feed?country=${report.country}`} className="block mt-2 text-xs text-[#0F7B6C] font-medium hover:underline">Browse {report.country} reports →</a>
+          </div>
+
+          {/* Ad Slot 2 */}
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <p className="text-[10px] font-medium text-gray-400 mb-2">Sponsored</p>
+            <div className="w-full h-24 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg flex items-center justify-center">
+              <p className="text-xs text-gray-400">Ad Space</p>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-2"><a href="/contact" className="text-[#0F7B6C]">Advertise here →</a></p>
+          </div>
+
+          {/* Safety Tips */}
+          <div className="bg-amber-50 rounded-xl border border-amber-100 p-4">
+            <h3 className="text-sm font-bold text-amber-800 mb-2">⚠️ Safety Tips</h3>
+            <ul className="text-xs text-amber-700 space-y-1.5">
+              <li>• Verify reports before sharing</li>
+              <li>• Don't approach dangerous situations</li>
+              <li>• Contact authorities for emergencies</li>
+              <li>• Protect your identity when needed</li>
+            </ul>
+          </div>
+
+        </div>
+      </aside>
+
+      </div>
     </div>
   );
 }
 
 export default function ReportPage() {
   return (
-    <Suspense fallback={<div className="max-w-2xl mx-auto px-4 py-20 text-center text-gray-400">Loading...</div>}>
+    <Suspense fallback={<div className="max-w-7xl mx-auto px-4 py-20 text-center text-gray-400">Loading...</div>}>
       <ReportContent />
     </Suspense>
   );
