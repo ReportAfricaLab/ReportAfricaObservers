@@ -3,6 +3,10 @@ name: ReportAfrica CI/CD
 on:
   push:
     branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'packages/shared/**'
+      - 'package-lock.json'
 
 env:
   AWS_REGION: eu-west-1
@@ -24,5 +28,5 @@ jobs:
           aws ssm send-command \
             --instance-ids ${{ secrets.EC2_INSTANCE_ID }} \
             --document-name "AWS-RunShellScript" \
-            --parameters '{"commands":["cd /home/ec2-user/reportafrica && git pull origin main && docker build -t reportafrica-api -f apps/api/Dockerfile . && docker stop reportafrica-api && docker rm reportafrica-api && docker run -d --name reportafrica-api --restart always -p 3001:3001 --env-file /home/ec2-user/.env.production reportafrica-api"]}' \
-            --timeout-seconds 600
+            --parameters '{"commands":["nohup bash -c \"cd /home/ec2-user/reportafrica && git fetch origin main && git reset --hard origin/main && docker build -t reportafrica-api-new -f apps/api/Dockerfile . && docker stop reportafrica-api && docker rm reportafrica-api && docker tag reportafrica-api-new reportafrica-api && docker rmi reportafrica-api-new && docker run -d --name reportafrica-api --restart always -p 3001:3001 --env-file /home/ec2-user/.env.production reportafrica-api\" > /tmp/deploy.log 2>&1 &"]}' \
+            --timeout-seconds 60
