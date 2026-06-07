@@ -21,8 +21,12 @@ async function bootstrap() {
 
   // Security headers
   app.use(helmet.default({
-    contentSecurityPolicy: isProduction ? undefined : false,
+    contentSecurityPolicy: false, // CSP handled by Vercel/Nginx for frontend
     crossOriginEmbedderPolicy: false,
+    hsts: { maxAge: 31536000, includeSubDomains: true },
+    frameguard: { action: 'deny' },
+    noSniff: true,
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   }));
 
   app.setGlobalPrefix('api/v1');

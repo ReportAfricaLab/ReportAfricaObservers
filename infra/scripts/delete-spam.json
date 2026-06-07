@@ -1,0 +1,5 @@
+{
+  "commands": [
+    "docker exec reportafrica-api node -e \"const { Client } = require('pg'); const c = new Client({host: process.env.DATABASE_HOST, port: 5432, database: 'reportafrica', user: 'reportafrica_admin', password: 'JesusisLord2026!', ssl: {rejectUnauthorized: false}}); c.connect().then(() => c.query(\\\"DELETE FROM reports WHERE id IN ('21698c1c-3655-459e-8a39-c4160a1bec3a', 'eb869b6c-0ff5-4b3b-b700-a1cc7b930be3')\\\")).then(r => {console.log('Deleted:', r.rowCount); c.end()}).catch(e => {console.log('Error:', e.message); c.end()})\""
+  ]
+}

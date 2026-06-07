@@ -1,0 +1,5 @@
+{
+  "commands": [
+    "docker exec reportafrica-api node -e \"const { Client } = require('pg'); const c = new Client({host: process.env.DATABASE_HOST, port: 5432, database: 'reportafrica', user: 'reportafrica_admin', password: 'JesusisLord2026!', ssl: {rejectUnauthorized: false}}); const ids = ['21698c1c-3655-459e-8a39-c4160a1bec3a', 'eb869b6c-0ff5-4b3b-b700-a1cc7b930be3']; c.connect().then(async () => { for (const id of ids) { await c.query('DELETE FROM verifications WHERE report_id = $1', [id]); await c.query('DELETE FROM comments WHERE report_id = $1', [id]); await c.query('DELETE FROM tips WHERE report_id = $1', [id]); await c.query('DELETE FROM report_updates WHERE report_id = $1', [id]); await c.query('DELETE FROM reports WHERE id = $1', [id]); } console.log('Deleted spam reports'); c.end(); }).catch(e => { console.log('Error:', e.message); c.end(); })\""
+  ]
+}

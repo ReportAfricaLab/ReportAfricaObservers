@@ -40,8 +40,18 @@ export class ReportsService {
     // AI moderation check
     const modResult = await this.moderationService.moderateReport(dto.title, dto.description, dto.category);
 
-    if (!modResult.isApproved && modResult.flags.includes('hate_speech')) {
-      throw new BadRequestException('Report rejected: violates community guidelines');
+    if (!modResult.isApproved) {
+      if (modResult.flags.includes('hate_speech')) {
+        await this.trustService.addScore(authorId, 'report_flagged_fake');
+        throw new BadRequestException('Report rejected: contains hate speech or incitement to violence');
+      }
+      if (modResult.flags.includes('spam')) {
+        await this.trustService.addScore(authorId, 'report_flagged_spam');
+        throw new BadRequestException('Report rejected: appears to be spam or irrelevant content');
+      }
+      if (modResult.flags.includes('dangerous_misinformation')) {
+        throw new BadRequestException('Report rejected: contains dangerous misinformation');
+      }
     }
 
     const report = this.reportRepo.create({
@@ -57,11 +67,6 @@ export class ReportsService {
 
     // Award trust points for creating a report
     await this.trustService.addScore(authorId, 'report_created');
-
-    // If AI flagged as spam, deduct points
-    if (modResult.flags.includes('spam')) {
-      await this.trustService.addScore(authorId, 'report_flagged_spam');
-    }
 
     // Invalidate feed cache for this country
     await this.invalidateFeedCache(country);
