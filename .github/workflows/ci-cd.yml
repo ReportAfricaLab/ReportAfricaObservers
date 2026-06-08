@@ -7,15 +7,19 @@ on:
       - 'apps/api/**'
       - 'packages/shared/**'
       - 'package-lock.json'
+  workflow_dispatch:
 
 env:
   AWS_REGION: eu-west-1
+  ECR_REPO: 167403240138.dkr.ecr.eu-west-1.amazonaws.com/reportafrica-api
 
 jobs:
-  deploy-api:
-    name: Deploy API to Production
+  build-and-deploy:
+    name: Build & Deploy API
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -23,10 +27,19 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Trigger rebuild on EC2
+      - name: Login to Amazon ECR
+        run: aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_REPO }}
+
+      - name: Build Docker image
+        run: docker build -t ${{ env.ECR_REPO }}:latest -f apps/api/Dockerfile .
+
+      - name: Push to ECR
+        run: docker push ${{ env.ECR_REPO }}:latest
+
+      - name: Deploy to EC2 (pull and restart)
         run: |
           aws ssm send-command \
             --instance-ids ${{ secrets.EC2_INSTANCE_ID }} \
             --document-name "AWS-RunShellScript" \
-            --parameters '{"commands":["nohup bash -c \"cd /home/ec2-user/reportafrica && git fetch origin main && git reset --hard origin/main && docker build -t reportafrica-api-new -f apps/api/Dockerfile . && docker stop reportafrica-api && docker rm reportafrica-api && docker tag reportafrica-api-new reportafrica-api && docker rmi reportafrica-api-new && docker run -d --name reportafrica-api --restart always -p 3001:3001 --env-file /home/ec2-user/.env.production reportafrica-api\" > /tmp/deploy.log 2>&1 &"]}' \
-            --timeout-seconds 60
+            --parameters '{"commands":["aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 167403240138.dkr.ecr.eu-west-1.amazonaws.com && docker pull 167403240138.dkr.ecr.eu-west-1.amazonaws.com/reportafrica-api:latest && docker stop reportafrica-api && docker rm reportafrica-api && docker run -d --name reportafrica-api --restart always -p 3001:3001 --env-file /home/ec2-user/.env.production 167403240138.dkr.ecr.eu-west-1.amazonaws.com/reportafrica-api:latest"]}' \
+            --timeout-seconds 120

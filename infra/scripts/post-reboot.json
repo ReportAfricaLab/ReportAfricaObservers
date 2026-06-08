@@ -1,0 +1,7 @@
+{
+  "commands": [
+    "docker ps -a --format '{{.Names}} {{.Status}}' 2>&1",
+    "df -h / | tail -1",
+    "cat /tmp/build.log 2>&1 | tail -15"
+  ]
+}
