@@ -94,7 +94,7 @@ export default function HomeScreen() {
         </View>
         <Text style={[styles.category, { color: colors.textSecondary }]}>{item.category.replace('_', ' ')}</Text>
       </View>
-      <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>{item.title}</Text>
+      <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>{item.aiHeadline || item.title}</Text>
       <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={3}>{item.description}</Text>
       <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
         <Text style={[styles.meta, { color: colors.textSecondary }]}>{item.author?.displayName || 'Anonymous'}</Text>
@@ -176,8 +176,22 @@ export default function HomeScreen() {
       )}
       <FlatList
         data={reports}
-        keyExtractor={(item) => item.id}
-        renderItem={renderReport}
+        keyExtractor={(item, index) => item.id || `ad-${index}`}
+        renderItem={({ item, index }) => {
+          // Show sponsored ad placeholder every 5th position
+          if ((index + 1) % 6 === 0) {
+            return (
+              <View style={styles.sponsoredCard}>
+                <Text style={styles.sponsoredLabel}>Sponsored</Text>
+                <View style={styles.sponsoredContent}>
+                  <Text style={styles.sponsoredText}>Ad Space Available</Text>
+                  <Text style={styles.sponsoredCta}>Advertise on ReportAfrica</Text>
+                </View>
+              </View>
+            );
+          }
+          return renderReport({ item });
+        }}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
         ListEmptyComponent={
@@ -270,4 +284,9 @@ const styles = StyleSheet.create({
   drawerItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   drawerItemIcon: { fontSize: 20 },
   drawerItemText: { fontSize: 15, fontWeight: '500', color: theme.colors.light.text },
+  sponsoredCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginHorizontal: 16, marginBottom: 12, borderWidth: 1, borderColor: '#e5e7eb' },
+  sponsoredLabel: { fontSize: 10, fontWeight: '600', color: '#9ca3af', marginBottom: 8 },
+  sponsoredContent: { height: 80, backgroundColor: '#f9fafb', borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  sponsoredText: { fontSize: 12, color: '#9ca3af' },
+  sponsoredCta: { fontSize: 10, color: '#0F7B6C', marginTop: 4, fontWeight: '600' },
 });
