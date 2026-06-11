@@ -57,25 +57,41 @@ export default function LivePage() {
     if (!streamId || status !== 'live') return;
 
     let socket: any;
-    (async () => {
-      const { io } = await import('socket.io-client');
-      socket = io(WS_URL, { transports: ['websocket'], auth: { token: token || localStorage.getItem('ra_token') } });
+    let mounted = true;
+    const authToken = token || localStorage.getItem('ra_token');
+
+    import('socket.io-client').then(({ io }) => {
+      if (!mounted) return;
+      socket = io(WS_URL, {
+        transports: ['websocket', 'polling'],
+        auth: { token: authToken },
+        forceNew: true,
+      });
       socketRef.current = socket;
 
       socket.on('connect', () => {
         socket.emit('join:stream', streamId);
       });
 
+      // If already connected by the time listener attaches
+      if (socket.connected) {
+        socket.emit('join:stream', streamId);
+      }
+
       socket.on('chat:new', (msg: ChatMessage) => {
-        setChatMessages((prev) => [...prev, msg]);
+        setChatMessages((prev) => {
+          if (prev.some(m => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
       });
 
       socket.on('viewers:update', (data: { count: number }) => {
         setViewerCount(data.count);
       });
-    })();
+    });
 
     return () => {
+      mounted = false;
       if (socket) {
         socket.emit('leave:stream', streamId);
         socket.disconnect();
@@ -157,9 +173,10 @@ export default function LivePage() {
 
   const sendChat = () => {
     if (!chatInput.trim() || !socketRef.current || !user) return;
+    const text = chatInput.trim();
     socketRef.current.emit('chat:send', {
       roomId: `stream:${streamId}`,
-      text: chatInput.trim(),
+      text,
       userId: user.id || 'anon',
       username: user.username || 'Anonymous',
     });
