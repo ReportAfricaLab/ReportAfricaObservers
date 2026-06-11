@@ -42,12 +42,18 @@ export default function StreamBroadcaster({ config, onStatusChange, autoPreview 
   useEffect(() => {
     if (autoPreview) startPreview();
     return () => {
-      // Only cleanup preview stream, NOT the LiveKit room
       if (videoRef.current?.srcObject && !roomRef.current) {
         (videoRef.current.srcObject as MediaStream).getTracks().forEach(t => t.stop());
       }
     };
   }, []);
+
+  // Auto-start broadcast when config is provided
+  useEffect(() => {
+    if (config && cameraReady && status === 'preview') {
+      startBroadcast();
+    }
+  }, [config, cameraReady]);
 
   const startBroadcast = async () => {
     if (!config) { setError('No stream configuration'); return; }
