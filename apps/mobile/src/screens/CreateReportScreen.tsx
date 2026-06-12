@@ -171,7 +171,16 @@ export default function CreateReportScreen() {
       }
 
       const mediaUrls = await uploadMedia();
-      await reportsAPI.create({ title, description, category, severity, latitude, longitude, isAnonymous, mediaUrls });
+
+      // Generate SHA-256 hash of primary media for evidence integrity
+      let contentHash = '';
+      if (mediaFiles.length > 0) {
+        const { digestStringAsync, CryptoDigestAlgorithm } = require('expo-crypto');
+        const fileData = await fetch(mediaFiles[0].uri).then(r => r.text());
+        contentHash = await digestStringAsync(CryptoDigestAlgorithm.SHA256, fileData);
+      }
+
+      await reportsAPI.create({ title, description, category, severity, latitude, longitude, isAnonymous, mediaUrls, contentHash });
       Alert.alert('Report Submitted', 'Your report has been submitted successfully.');
       setTitle(''); setDescription(''); setCategory(''); setMediaFiles([]);
     } catch (err) {

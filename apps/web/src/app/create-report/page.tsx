@@ -69,7 +69,15 @@ export default function CreateReportPage() {
     setLoading(true);
     setError('');
     try {
-      // Upload media files first
+      // Generate SHA-256 hash of primary media for evidence integrity
+      let contentHash = '';
+      if (mediaFiles.length > 0) {
+        const buffer = await mediaFiles[0].file.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+        contentHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+
+      // Upload media files
       const media: { type: string; url: string }[] = [];
       for (const m of mediaFiles) {
         try {
@@ -79,7 +87,7 @@ export default function CreateReportPage() {
           media.push({ type: fileType, url: m.blurredUrl || fileUrl });
         } catch {}
       }
-      await api.reports.create(token, { ...form, ...location, media });
+      await api.reports.create(token, { ...form, ...location, media, contentHash });
       router.push('/feed');
     } catch (err: any) {
       setError(err.message || 'Failed to submit report');

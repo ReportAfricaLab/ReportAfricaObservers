@@ -84,6 +84,9 @@ export class ReportEntity {
   @Column({ name: 'view_count', type: 'int', default: 0 })
   viewCount: number;
 
+  @Column({ name: 'content_hash', nullable: true })
+  contentHash: string;
+
   @CreateDateColumn({ name: 'created_at' })
   @Index()
   createdAt: Date;

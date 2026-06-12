@@ -192,6 +192,9 @@ function ReportContent() {
           <span className={`ml-auto text-xs px-2 py-0.5 rounded ${report.verificationLevel === 'unverified' ? 'bg-gray-100 text-gray-500' : 'bg-green-100 text-green-700'}`}>
             {report.verificationLevel.replace('_', ' ')}
           </span>
+          {report.contentHash && (
+            <span className="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-700" title={`SHA-256: ${report.contentHash}`}>🔒 Evidence Sealed</span>
+          )}
         </div>
 
         <h1 className="text-2xl font-bold text-gray-900 mb-3">{report.aiHeadline || report.title}</h1>

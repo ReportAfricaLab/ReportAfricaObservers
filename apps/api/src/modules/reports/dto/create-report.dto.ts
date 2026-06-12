@@ -47,4 +47,8 @@ export class CreateReportDto {
   @IsArray()
   @IsOptional()
   media?: { type: string; url: string; thumbnailUrl?: string; duration?: number }[];
+
+  @IsString()
+  @IsOptional()
+  contentHash?: string;
 }
