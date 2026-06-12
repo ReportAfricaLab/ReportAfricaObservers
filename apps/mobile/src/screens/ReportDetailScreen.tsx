@@ -153,6 +153,7 @@ export default function ReportDetailScreen({ route }: any) {
         </View>
         <Text style={styles.category}>{report.category.replace('_', ' ')}</Text>
         <Text style={styles.verification}>{report.verificationLevel.replace('_', ' ')}</Text>
+        {report.contentHash && <Text style={styles.evidenceBadge}>🔒 Evidence Sealed</Text>}
       </View>
 
       <Text style={styles.title}>{report.aiHeadline || report.title}</Text>
@@ -318,6 +319,7 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 10, fontWeight: '700', color: '#fff' },
   category: { fontSize: 12, color: theme.colors.light.textSecondary, textTransform: 'capitalize' },
   verification: { marginLeft: 'auto', fontSize: 11, color: theme.colors.primary, textTransform: 'capitalize' },
+  evidenceBadge: { fontSize: 10, color: '#1d4ed8', backgroundColor: '#eff6ff', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden', marginLeft: 6 },
   title: { fontSize: 22, fontWeight: '700', color: theme.colors.light.text, marginBottom: 10 },
   disputedBanner: { backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fde68a', borderRadius: 8, padding: 12, marginBottom: 12 },
   disputedTitle: { fontSize: 13, fontWeight: '700', color: '#92400e' },
