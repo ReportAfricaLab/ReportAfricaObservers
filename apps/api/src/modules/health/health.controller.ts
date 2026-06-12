@@ -1,7 +1,16 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { AuthGuard } from '@nestjs/passport';
+import { AdminGuard } from '../../common/guards/admin.guard';
+import { createHmac } from 'crypto';
 import { UserEntity } from '../../database/entities';
+
+// Canary state — persisted in memory, refreshed by admin
+let canaryState = {
+  lastVerifiedSafe: new Date().toISOString(),
+  message: 'ReportAfrica is operating freely and independently.',
+};
 
 @Controller('health')
 export class HealthController {
@@ -51,5 +60,32 @@ export class HealthController {
       },
       environment: process.env.NODE_ENV || 'development',
     };
+  }
+
+  @Get('canary')
+  getCanary() {
+    const secret = process.env.JWT_SECRET || 'dev-secret';
+    const payload = `${canaryState.lastVerifiedSafe}|${canaryState.message}`;
+    const signature = createHmac('sha256', secret).update(payload).digest('hex');
+    const ageMs = Date.now() - new Date(canaryState.lastVerifiedSafe).getTime();
+    const expired = ageMs > 7 * 24 * 60 * 60 * 1000; // >7 days = expired
+
+    return {
+      lastVerifiedSafe: canaryState.lastVerifiedSafe,
+      message: canaryState.message,
+      signature,
+      expired,
+      ageDays: Math.floor(ageMs / (24 * 60 * 60 * 1000)),
+    };
+  }
+
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
+  @Patch('canary')
+  refreshCanary(@Body() body: { message?: string }) {
+    canaryState = {
+      lastVerifiedSafe: new Date().toISOString(),
+      message: body.message || 'ReportAfrica is operating freely and independently.',
+    };
+    return { status: 'refreshed', ...canaryState };
   }
 }
