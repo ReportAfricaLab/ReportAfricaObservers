@@ -33,7 +33,9 @@ export default function ReferralScreen() {
       setCode(res.data?.code || '');
     }
     Share.share({
-      message: `Join ReportAfrica and report what's happening around you! Use my referral code: ${code}\n\nDownload: https://reportafrica.com`,
+      message: `Join ReportAfrica — Africa's citizen reporting platform! Use my referral code: ${code}
+
+Sign up: https://reportafrica-web.vercel.app/register`,
     });
   };
 

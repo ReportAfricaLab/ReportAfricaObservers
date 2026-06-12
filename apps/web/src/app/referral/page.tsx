@@ -59,6 +59,11 @@ export default function ReferralPage() {
         <div className="flex gap-2 justify-center">
           {!code && <button onClick={handleGenerate} className="px-4 py-2 bg-[#0F7B6C] text-white rounded-lg text-sm font-medium">Generate Code</button>}
           {code && <button onClick={handleCopy} className="px-4 py-2 bg-[#0F7B6C] text-white rounded-lg text-sm font-medium">📋 Copy</button>}
+          {code && <button onClick={() => {
+            const msg = `Join ReportAfrica — Africa's citizen reporting platform! Use my referral code ${code} when you sign up. https://reportafrica-web.vercel.app/register`;
+            if (navigator.share) { navigator.share({ text: msg }).catch(() => {}); }
+            else { navigator.clipboard.writeText(msg); setMessage('Invite message copied!'); setTimeout(() => setMessage(''), 2000); }
+          }} className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium">📤 Share Invite</button>}
         </div>
         {message && <p className="text-xs text-green-600 mt-2">{message}</p>}
       </div>
