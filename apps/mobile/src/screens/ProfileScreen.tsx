@@ -328,6 +328,4 @@ const styles = StyleSheet.create({
   wipeText: { color: '#6b7280', fontSize: theme.fontSize.sm, fontWeight: '500' },
   academyBtn: { marginHorizontal: 16, marginBottom: 40, paddingVertical: 14, backgroundColor: '#ecfdf5', borderRadius: theme.borderRadius.md, alignItems: 'center' },
   academyBtnText: { color: '#065f46', fontSize: theme.fontSize.md, fontWeight: '600' },
-  academyBtn: { marginHorizontal: 16, marginBottom: 40, paddingVertical: 14, backgroundColor: '#ecfdf5', borderRadius: theme.borderRadius.md, alignItems: 'center' },
-  academyBtnText: { color: '#065f46', fontSize: theme.fontSize.md, fontWeight: '600' },
 });
