@@ -29,7 +29,7 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-semibold text-sm mb-4">Resources</h4>
             <div className="space-y-2 text-sm">
-              <a href="https://reportafrica-academy.vercel.app" target="_blank" className="block hover:text-white transition">🎓 Journalist Academy</a>
+              <a href="https://reportafrica-academy-amber.vercel.app" target="_blank" className="block hover:text-white transition">🎓 Journalist Academy</a>
               <Link href="/how-it-works" className="block hover:text-white transition">How It Works</Link>
               <Link href="/faq" className="block hover:text-white transition">FAQ</Link>
               <Link href="/guidelines" className="block hover:text-white transition">Community Guidelines</Link>
@@ -57,3 +57,4 @@ export default function Footer() {
     </footer>
   );
 }
+

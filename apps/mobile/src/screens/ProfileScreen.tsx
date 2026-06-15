@@ -203,7 +203,7 @@ export default function ProfileScreen() {
         ))}
         <TouchableOpacity style={[styles.menuItem, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => {
           const { token: t } = useAppStore.getState();
-          Linking.openURL(`https://reportafrica-academy.vercel.app/auth?token=${t || ''}`);
+          Linking.openURL(`https://reportafrica-academy-amber.vercel.app/auth?token=${t || ''}`);
         }}>
           <Text style={styles.menuIcon}>🎓</Text>
           <Text style={[styles.menuText, { color: colors.text }]}>Journalist Academy</Text>
@@ -328,3 +328,4 @@ const styles = StyleSheet.create({
   wipeBtn: { marginHorizontal: 16, marginTop: 10, marginBottom: 10, paddingVertical: 14, backgroundColor: '#f3f4f6', borderRadius: theme.borderRadius.md, alignItems: 'center' },
   wipeText: { color: '#6b7280', fontSize: theme.fontSize.sm, fontWeight: '500' },
 });
+

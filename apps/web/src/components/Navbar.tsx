@@ -126,7 +126,7 @@ export default function Navbar() {
                         { href: '/tip-packs', icon: '💳', label: 'Tip Packs' },
                         { href: '/watchlist', icon: '📍', label: 'Watchlists' },
                         { href: '/referral', icon: '🎁', label: 'Referral' },
-                        { href: 'https://reportafrica-academy.vercel.app', icon: '🎓', label: 'Academy' },
+                        { href: 'https://reportafrica-academy-amber.vercel.app', icon: '🎓', label: 'Academy' },
                         { href: '/profile/licenses', icon: '📄', label: 'Licenses' },
                       ].map((item) => (
                         <Link key={item.href} href={item.href} onClick={() => setShowDropdown(false)}
@@ -209,7 +209,7 @@ export default function Navbar() {
                   { href: '/tip-packs', icon: '💳', label: 'Tip Packs' },
                   { href: '/watchlist', icon: '📍', label: 'Watchlists' },
                   { href: '/referral', icon: '🎁', label: 'Referral' },
-                  { href: 'https://reportafrica-academy.vercel.app', icon: '🎓', label: 'Academy' },
+                  { href: 'https://reportafrica-academy-amber.vercel.app', icon: '🎓', label: 'Academy' },
                 ].map((item) => (
                   <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 py-2.5 px-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
@@ -228,3 +228,4 @@ export default function Navbar() {
     </header>
   );
 }
+
