@@ -116,20 +116,69 @@ const PAGES: Record<string, { title: string; content: () => React.ReactNode }> =
     title: 'Terms of Service',
     content: () => (
       <>
-        <Section title="Content & Reporting">
-          You retain ownership of content you submit. Reports must be truthful. False reports result in penalties.
+        <Section title="Effective Date">June 2026</Section>
+        <Section title="1. Introduction">
+          ReportAfrica is a citizen journalism, community reporting, local news, business announcements, campus journalism, events, education, and creator monetization platform operating across Africa. Owned and operated by TRADILINK AFRICA SOLUTION LIMITED, incorporated under the laws of the Federal Republic of Nigeria. These Terms govern your use of reportafrica.africa, mobile applications, APIs and related services. By using ReportAfrica, you agree to be legally bound by these Terms.
         </Section>
-        <Section title="Media Licensing">
-          Revenue from licensing is split 50/50 between reporter and platform.
+        <Section title="2. Eligibility">
+          You must be at least 16 years old (or minimum legal age in your country), have legal capacity to enter binding agreements, and not be prohibited from using the platform under applicable laws.
         </Section>
-        <Section title="Donations">
-          Fraudulent campaigns will be removed. Donations are non-refundable once disbursed.
+        <Section title="3. Account Security">
+          You agree to provide accurate information, keep credentials secure, accept responsibility for all account activity, and notify us immediately of unauthorized access. We are not liable for losses from unauthorized use.
         </Section>
-        <Section title="Prohibited Conduct">
-          {`• False reports\n• Hate speech\n• Spam\n• Impersonation\n• Trust score manipulation`}
+        <Section title="4. User Content">
+          You may post reports, articles, photos, videos, comments, business listings, events, audio, and livestreams. You retain ownership but grant ReportAfrica a worldwide, non-exclusive, royalty-free license to use, store, reproduce, distribute, display, and promote your content. You are solely responsible for content you post.
         </Section>
-        <Section title="Contact">
-          legal@reportafrica.com
+        <Section title="5. Content Restrictions">
+          {`You agree NOT to post content that:\n• Contains hate speech, harassment, or discrimination\n• Incites violence or criminal activity\n• Is false, misleading, or deliberately manipulative\n• Violates privacy or intellectual property rights\n• Contains explicit sexual content (especially involving minors)\n• Promotes fraud, scams, or deceptive practices\n• Contains spam, unsolicited advertising, or malware\n• Attempts to manipulate trust scores or rankings`}
+        </Section>
+        <Section title="6. Trust System">
+          ReportAfrica uses a trust and verification system powered by automated tools and human moderation. It may rank content by credibility, promote verified reports, reduce visibility of spam, and restrict violating accounts. Trust scores are internal metrics and may be adjusted at any time.
+        </Section>
+        <Section title="7. Moderation & Enforcement">
+          We may remove/restrict content, suspend/terminate accounts, limit access, and investigate suspicious activity — with or without prior notice for fraud, misinformation, legal violations, or security risks.
+        </Section>
+        <Section title="8. Payments & Monetization">
+          We support donations, tips, creator earnings, subscriptions, advertising payments, course purchases, and wallet transactions via third-party providers. Payments are generally non-refundable. We are not responsible for disputes between users and creators. We may delay payouts for fraud prevention.
+        </Section>
+        <Section title="9. Advertising">
+          ReportAfrica may display sponsored posts, ads, brand campaigns, and promoted content. Advertisers are responsible for their content. We may moderate or remove ads that violate our policies.
+        </Section>
+        <Section title="10. Intellectual Property">
+          All platform logos, design systems, software, branding, and features are owned by or licensed to TRADILINK AFRICA SOLUTION LIMITED. You may not copy, modify, distribute, or reverse-engineer any part of the platform.
+        </Section>
+        <Section title="11. AI & Automated Systems">
+          We use AI to detect fake news/spam, flag harmful content, improve ranking, and support moderation. These systems assist but do not fully replace human moderation.
+        </Section>
+        <Section title="12. Privacy">
+          Your use is also governed by our Privacy Policy available at reportafrica.africa.
+        </Section>
+        <Section title="13. Third-Party Services">
+          We integrate with payment providers, cloud infrastructure, analytics tools, and messaging services. We are not responsible for third-party failures or policies.
+        </Section>
+        <Section title="14. Suspension & Termination">
+          We may suspend or terminate your account for violating these Terms, fraudulent activity, platform misuse, or legal requirements. You may stop using the platform at any time.
+        </Section>
+        <Section title="15. Disclaimer of Warranties">
+          ReportAfrica is provided "as is" and "as available." We do not guarantee continuous availability, error-free operation, accuracy of user content, or absence of harmful content.
+        </Section>
+        <Section title="16. Limitation of Liability">
+          TRADILINK AFRICA SOLUTION LIMITED shall not be liable for loss of data, loss of income/profits, damages from user content, platform interruptions, or actions of other users — to the maximum extent permitted by law.
+        </Section>
+        <Section title="17. Indemnification">
+          You agree to indemnify TRADILINK AFRICA SOLUTION LIMITED from claims arising from your use of the platform, your content, violation of these Terms, or violation of any law or third-party rights.
+        </Section>
+        <Section title="18. Compliance">
+          You agree to comply with all applicable laws in your country and any jurisdiction where you access ReportAfrica.
+        </Section>
+        <Section title="19. Governing Law">
+          These Terms are governed by the laws of the Federal Republic of Nigeria. Disputes shall be resolved in competent courts within Nigeria unless otherwise required by law.
+        </Section>
+        <Section title="20. Changes to Terms">
+          We may update these Terms at any time. Continued use after changes constitutes acceptance.
+        </Section>
+        <Section title="21. Contact">
+          {`TRADILINK AFRICA SOLUTION LIMITED\nOwner and Operator of ReportAfrica\n\nWebsite: reportafrica.africa\nEmail: legal@reportafrica.africa\nSupport: support@reportafrica.africa\nHead Office: Federal Republic of Nigeria`}
         </Section>
       </>
     ),
