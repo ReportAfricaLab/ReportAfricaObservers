@@ -138,10 +138,10 @@ export class CoursesService {
     const res = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
       headers: { Authorization: `Bearer ${this.paystackSecret}` },
     });
-    const data = await res.json();
-    if (data?.data?.status !== 'success') return { enrolled: false };
+    const json = await res.json();
+    if (json?.data?.status !== 'success') return { enrolled: false };
 
-    const { userId, courseId } = res.data.data.metadata || {};
+    const { userId, courseId } = json.data.metadata || {};
     if (!userId || !courseId) return { enrolled: false };
 
     const existing = await this.enrollmentRepo.findOne({ where: { userId, courseId } });
