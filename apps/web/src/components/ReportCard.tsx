@@ -15,6 +15,8 @@ interface Report {
   upvotes: number;
   downvotes: number;
   commentCount: number;
+  media?: { type: string; url: string }[];
+  contentHash?: string;
   createdAt: string;
   author?: { displayName: string; username: string; trustLevel: string; isCertified?: boolean; subscriptionTier?: string };
 }
@@ -59,6 +61,29 @@ export default function ReportCard({ report }: { report: Report }) {
 
       <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">{report.aiHeadline || report.title}</h3>
       <p className="text-sm text-gray-500 line-clamp-2 mb-3">{report.description}</p>
+
+      {/* Media */}
+      {report.media && report.media.length > 0 && report.media[0]?.url && (
+        <div className="mb-3 rounded-lg overflow-hidden">
+          {report.media[0].type?.startsWith('video') ? (
+            <video src={report.media[0].url} className="w-full h-48 object-cover bg-gray-100" />
+          ) : (
+            <img src={report.media[0].url} alt={report.title} className="w-full h-48 object-cover bg-gray-100" loading="lazy" />
+          )}
+          {report.media.length > 1 && (
+            <div className="flex gap-1 mt-1">
+              {report.media.slice(1, 4).map((m, i) => (
+                <div key={i} className="flex-1 h-16 rounded overflow-hidden bg-gray-100">
+                  <img src={m.url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                </div>
+              ))}
+              {report.media.length > 4 && (
+                <div className="flex-1 h-16 rounded bg-gray-200 flex items-center justify-center text-xs text-gray-600 font-medium">+{report.media.length - 4}</div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center justify-between text-xs text-gray-400">
         <span>{report.author?.displayName || 'Anonymous'}{report.author?.isCertified && ' 🎓'}{report.author?.subscriptionTier === 'legend' && ' 👑'}{report.author?.subscriptionTier === 'elite' && ' 💜'}{report.author?.subscriptionTier === 'pro' && ' 🔵'}</span>

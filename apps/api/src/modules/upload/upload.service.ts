@@ -47,7 +47,6 @@ export class UploadService {
       Bucket: this.bucket,
       Key: key,
       ContentType: contentType,
-      ContentLength: this.getMaxSize(fileType),
     });
 
     const uploadUrl = await getSignedUrl(this.s3Client, command, { expiresIn: 3600 });

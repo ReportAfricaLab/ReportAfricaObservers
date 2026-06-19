@@ -1,1 +1,1 @@
-{"commands":["docker exec reportafrica-postgres-1 psql -U postgres -d reportafrica -c \"SELECT id, title, media FROM reports ORDER BY created_at DESC LIMIT 3;\" && echo --- && docker logs reportafrica-api 2>&1 | grep -i 'upload\\|presign\\|media\\|image' | tail -10"]}
+{"commands":["docker exec reportafrica-postgres-1 psql -U postgres -d reportafrica -c \"SELECT id, title, media FROM reports ORDER BY created_at DESC LIMIT 5;\""]}
