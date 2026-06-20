@@ -2,6 +2,7 @@ import { Controller, Get, Patch, Body, UseGuards, Inject, Optional } from '@nest
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuthGuard } from '@nestjs/passport';
+import { ConfigService } from '@nestjs/config';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { AdminGuard } from '../../common/guards/admin.guard';
@@ -19,6 +20,7 @@ export class HealthController {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepo: Repository<UserEntity>,
+    private readonly config: ConfigService,
     @Optional() @Inject(CACHE_MANAGER) private readonly cache?: Cache,
   ) {}
 
@@ -96,8 +98,38 @@ export class HealthController {
       message: body.message || 'ReportAfrica is operating freely and independently.',
     };
     if (this.cache) {
-      await this.cache.set(CANARY_KEY, canaryState, 30 * 24 * 60 * 60 * 1000); // 30 days TTL
+      await this.cache.set(CANARY_KEY, canaryState, 30 * 24 * 60 * 60 * 1000);
     }
     return { status: 'refreshed', ...canaryState };
+  }
+
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
+  @Patch('cloudflare/attack-mode')
+  async toggleAttackMode(@Body() body: { enabled: boolean }) {
+    const zoneId = this.config.get('CLOUDFLARE_ZONE_ID', '');
+    const apiToken = this.config.get('CLOUDFLARE_API_TOKEN', '');
+    if (!zoneId || !apiToken) return { error: 'Cloudflare not configured' };
+
+    const res = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/settings/security_level`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${apiToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: body.enabled ? 'under_attack' : 'medium' }),
+    });
+    const data = await res.json();
+    return { attackMode: body.enabled, success: data.success };
+  }
+
+  @Get('cloudflare/status')
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
+  async getCloudflareStatus() {
+    const zoneId = this.config.get('CLOUDFLARE_ZONE_ID', '');
+    const apiToken = this.config.get('CLOUDFLARE_API_TOKEN', '');
+    if (!zoneId || !apiToken) return { configured: false };
+
+    const res = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/settings/security_level`, {
+      headers: { Authorization: `Bearer ${apiToken}` },
+    });
+    const data = await res.json();
+    return { configured: true, securityLevel: data.result?.value, attackMode: data.result?.value === 'under_attack' };
   }
 }
