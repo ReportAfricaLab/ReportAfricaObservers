@@ -17,6 +17,15 @@ export class CreateCampaignDto {
   @Min(1000)
   targetAmount: number;
 
+  @IsNumber()
+  @Min(1000)
+  @IsOptional()
+  beneficiaryAmount?: number;
+
+  @IsString()
+  @IsOptional()
+  reportId?: string;
+
   @IsString()
   @IsIn(['NGN', 'GHS', 'KES', 'ZAR', 'UGX', 'RWF', 'USD', 'TZS', 'ETB', 'XOF', 'XAF', 'EGP'])
   @IsOptional()

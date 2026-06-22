@@ -26,16 +26,48 @@ export class DonationsService {
 
   async createCampaign(authorId: string, country: string, dto: CreateCampaignDto): Promise<CampaignEntity> {
     if (!dto.agreedToPlatformFee) {
-      throw new BadRequestException('You must agree to the 15% platform fee');
+      throw new BadRequestException('You must agree to the platform fee');
     }
     if (!dto.beneficiaryBank || !dto.beneficiaryAccount) {
       throw new BadRequestException('Bank details are required for campaign payout');
     }
 
+    // Gatekeeping: check requirements
+    const user = await this.campaignRepo.manager.getRepository('UserEntity').findOne({ where: { id: authorId } }) as any;
+    if (!user || user.trustScore < 50) {
+      throw new BadRequestException('Trust score must be at least 50 to create campaigns. Keep reporting accurately to build trust.');
+    }
+
+    // Must have completed Course 3 (Investigative Journalism)
+    const enrollment = await this.campaignRepo.manager.getRepository('EnrollmentEntity').findOne({ where: { userId: authorId, courseId: this.getInvestigativeCourseId() } }) as any;
+    if (!enrollment || !enrollment.completedAt) {
+      throw new BadRequestException('You must complete the "Investigative Journalism & Emergency Reporting" course in the Academy before creating campaigns.');
+    }
+
+    // Must link to a report with evidence
+    if (!dto.reportId) {
+      throw new BadRequestException('Campaign must be linked to a verified report with evidence.');
+    }
+    const report = await this.campaignRepo.manager.getRepository('ReportEntity').findOne({ where: { id: dto.reportId } }) as any;
+    if (!report || !report.media || report.media.length === 0) {
+      throw new BadRequestException('Linked report must have evidence (photos or videos).');
+    }
+    if (report.authorId !== authorId) {
+      throw new BadRequestException('You can only create campaigns for your own reports.');
+    }
+
+    // Auto-calculate target: beneficiaryAmount * 1.25 (10% reporter + 15% platform)
+    const beneficiaryAmount = dto.beneficiaryAmount || Number(dto.targetAmount);
+    const targetAmount = Math.round(beneficiaryAmount * 1.25);
+
     const campaign = this.campaignRepo.create({
       ...dto,
       authorId,
       country,
+      reportId: dto.reportId,
+      reporterId: authorId,
+      beneficiaryAmount,
+      targetAmount,
       currency: dto.currency || this.getCurrencyForCountry(country),
       media: dto.media || [],
       documents: dto.documents || [],
@@ -54,6 +86,12 @@ export class DonationsService {
     }
 
     return saved;
+  }
+
+  private getInvestigativeCourseId(): string {
+    // Course 3: Investigative Journalism & Emergency Reporting
+    // This will be resolved dynamically in production
+    return 'f7879978-70d2-4f72-8002-52d99488240c';
   }
 
   async getCampaignById(id: string): Promise<CampaignEntity> {
@@ -191,18 +229,23 @@ export class DonationsService {
     const campaign = await this.campaignRepo.findOne({ where: { id: campaignId } });
     if (!campaign || !campaign.isActive) return;
 
-    const targetWithFee = Number(campaign.targetAmount) * 1.15; // target + 15% fee
-    if (Number(campaign.raisedAmount) < targetWithFee) return;
+    const target = Number(campaign.targetAmount);
+    if (Number(campaign.raisedAmount) < target) return;
 
-    // Target reached! Payout 85% to campaign creator, keep 15%
+    // Target reached! Split payout:
+    // Beneficiary gets 100% of their stated need (80% of target)
+    // Reporter gets 10% of beneficiary amount (8% of target)
+    // Platform keeps 15% of beneficiary amount (12% of target)
     if (!campaign.beneficiaryBank || !campaign.beneficiaryAccount) return;
 
-    const payoutAmount = Math.round(Number(campaign.raisedAmount) * 0.85);
+    const beneficiaryAmount = Number(campaign.beneficiaryAmount) || Math.round(target * 0.80);
+    const reporterAmount = Math.round(beneficiaryAmount * 0.10);
     const reference = this.koraPayService.generateReference();
 
     try {
+      // Pay beneficiary
       await this.koraPayService.initializeSplitPayment({
-        amount: payoutAmount,
+        amount: beneficiaryAmount,
         currency: campaign.currency,
         customerEmail: 'payout@reportafrica.africa',
         customerName: campaign.beneficiaryName || 'Campaign Beneficiary',
@@ -212,9 +255,34 @@ export class DonationsService {
           accountNumber: campaign.beneficiaryAccount,
           accountName: campaign.beneficiaryName || '',
         },
-        platformSplitPercent: 0, // Full amount goes to beneficiary (15% already deducted)
+        platformSplitPercent: 0,
         metadata: { type: 'campaign_payout', campaignId },
       });
+
+      // Pay reporter (if different from beneficiary and has bank details)
+      if (campaign.reporterId) {
+        const reporter = await this.campaignRepo.manager.getRepository('UserEntity').findOne({ where: { id: campaign.reporterId } }) as any;
+        if (reporter && reporter.bankAccountNumber && reporter.bankCode) {
+          const reporterRef = this.koraPayService.generateReference();
+          await this.koraPayService.initializeSplitPayment({
+            amount: reporterAmount,
+            currency: campaign.currency,
+            customerEmail: 'reporter-payout@reportafrica.africa',
+            customerName: reporter.displayName || 'Reporter',
+            reference: reporterRef,
+            reporterBankAccount: {
+              bankCode: reporter.bankCode,
+              accountNumber: reporter.bankAccountNumber,
+              accountName: reporter.bankAccountName || reporter.displayName || '',
+            },
+            platformSplitPercent: 0,
+            metadata: { type: 'reporter_campaign_commission', campaignId, reporterId: campaign.reporterId },
+          });
+        } else {
+          // No bank details — add to tip balance
+          await this.campaignRepo.manager.getRepository('UserEntity').increment({ id: campaign.reporterId }, 'tipBalance', reporterAmount);
+        }
+      }
 
       // Mark campaign as paid out
       await this.campaignRepo.update(campaignId, { isActive: false, verificationLevel: 'funded_paid' });

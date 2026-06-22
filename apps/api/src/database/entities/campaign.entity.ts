@@ -77,6 +77,22 @@ export class CampaignEntity {
   @Column({ name: 'share_count', type: 'int', default: 0 })
   shareCount: number;
 
+  @Column({ name: 'report_id', nullable: true })
+  reportId: string;
+
+  @Column({ name: 'reporter_id', nullable: true })
+  reporterId: string;
+
+  @ManyToOne(() => UserEntity)
+  @JoinColumn({ name: 'reporter_id' })
+  reporter: UserEntity;
+
+  @Column({ name: 'beneficiary_amount', type: 'decimal', precision: 12, scale: 2, nullable: true })
+  beneficiaryAmount: number;
+
+  @Column({ name: 'agreed_to_platform_fee', default: false })
+  agreedToPlatformFee: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

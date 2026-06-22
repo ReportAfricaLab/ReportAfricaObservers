@@ -110,6 +110,10 @@ async function bootstrap() {
         ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP DEFAULT NULL;
         ALTER TABLE reports ADD COLUMN IF NOT EXISTS is_breaking BOOLEAN DEFAULT FALSE;
         ALTER TABLE reports ADD COLUMN IF NOT EXISTS event_type VARCHAR DEFAULT NULL;
+        ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS report_id UUID DEFAULT NULL;
+        ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS reporter_id UUID DEFAULT NULL;
+        ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS beneficiary_amount DECIMAL(12,2) DEFAULT NULL;
+        ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS agreed_to_platform_fee BOOLEAN DEFAULT FALSE;
       `);
       logger.log('Startup migration: livestreams columns verified');
     } catch (err) {
