@@ -1,6 +1,6 @@
-import { WebSocketGateway, WebSocketServer, SubscribeMessage, MessageBody, ConnectedSocket, OnGatewayConnection } from '@nestjs/websockets';
+import { WebSocketGateway, WebSocketServer, SubscribeMessage, MessageBody, ConnectedSocket, OnGatewayConnection, OnGatewayInit } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, OnModuleInit } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -10,7 +10,7 @@ import Redis from 'ioredis';
 import { ChatMessageEntity } from '../../database/entities';
 
 @WebSocketGateway({ cors: { origin: '*' }, namespace: '/realtime' })
-export class RealtimeGateway implements OnGatewayConnection, OnModuleInit {
+export class RealtimeGateway implements OnGatewayConnection, OnGatewayInit {
   @WebSocketServer() server: Server;
   private readonly logger = new Logger(RealtimeGateway.name);
   private viewerCounts = new Map<string, number>();
@@ -23,14 +23,13 @@ export class RealtimeGateway implements OnGatewayConnection, OnModuleInit {
     private readonly configService: ConfigService,
   ) {}
 
-  async onModuleInit() {
+  afterInit(server: Server) {
     const redisHost = this.configService.get('REDIS_HOST', 'localhost');
     const redisPort = this.configService.get<number>('REDIS_PORT', 6379);
     try {
       const pubClient = new Redis({ host: redisHost, port: redisPort });
       const subClient = pubClient.duplicate();
-      await pubClient.ping();
-      this.server.adapter(createAdapter(pubClient, subClient) as any);
+      server.adapter(createAdapter(pubClient, subClient) as any);
       this.logger.log(`Socket.IO Redis adapter connected (${redisHost}:${redisPort})`);
     } catch (err) {
       this.logger.warn('Redis adapter failed: ' + (err as any).message);
