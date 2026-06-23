@@ -86,8 +86,15 @@ export default function DonationsScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Helping Hands 🤝</Text>
-        <Text style={styles.headerSub}>Support fellow Africans in need</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View>
+            <Text style={styles.headerTitle}>Helping Hands 🤝</Text>
+            <Text style={styles.headerSub}>Support fellow Africans in need</Text>
+          </View>
+          <TouchableOpacity style={{ backgroundColor: '#F97316', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 }} onPress={() => navigation?.navigate('CreateCampaign')}>
+            <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>+ Campaign</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Category Filter */}

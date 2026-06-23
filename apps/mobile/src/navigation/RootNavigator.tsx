@@ -27,6 +27,7 @@ import TrustProfileScreen from '../screens/TrustProfileScreen';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
 import BusinessScreen from '../screens/BusinessScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import CreateCampaignScreen from '../screens/CreateCampaignScreen';
 import MainTabs from './MainTabs';
 
 const Stack = createNativeStackNavigator();
@@ -62,6 +63,7 @@ export default function RootNavigator() {
             <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ headerShown: true, headerTitle: 'Premium Reporter', headerTintColor: '#0F7B6C' }} />
             <Stack.Screen name="Business" component={BusinessScreen} options={{ headerShown: true, headerTitle: 'Business Badge', headerTintColor: '#0F7B6C' }} />
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: true, headerTitle: 'Change Password', headerTintColor: '#0F7B6C' }} />
+            <Stack.Screen name="CreateCampaign" component={CreateCampaignScreen} options={{ headerShown: true, headerTitle: 'Create Campaign', headerTintColor: '#F97316' }} />
           </>
         ) : (
           <>
