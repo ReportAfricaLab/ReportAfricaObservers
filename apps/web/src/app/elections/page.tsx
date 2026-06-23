@@ -1,10 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-
-const StreamPlayer = dynamic(() => import('@/components/StreamPlayer'), { ssr: false });
-const StreamBroadcaster = dynamic(() => import('@/components/StreamBroadcaster'), { ssr: false });
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -257,155 +254,8 @@ function FeedCard({ r }: { r: any }) {
 
 // === Election Live Tab ===
 
-const WS_URL = (process.env.NEXT_PUBLIC_WS_URL || 'https://api.reportafrica.africa') + '/realtime';
-
-interface ElectionChatMessage {
-  id: string;
-  username: string;
-  text: string;
-  createdAt: string;
-}
-
 function ElectionLiveTab({ streams }: { streams: any[] }) {
-  const [watching, setWatching] = useState<any>(null);
-  const [viewerToken, setViewerToken] = useState<string | null>(null);
-  const [viewerWsUrl, setViewerWsUrl] = useState<string | null>(null);
-  const [chatMessages, setChatMessages] = useState<ElectionChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState('');
-  const [viewerCount, setViewerCount] = useState(0);
-  const [showTip, setShowTip] = useState(false);
-  const [tipBalance, setTipBalance] = useState(0);
-  const [tipCurrency, setTipCurrency] = useState('NGN');
-  const socketRef = useRef<any>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  // Socket.IO connection when watching
-  useEffect(() => {
-    if (!watching) return;
-    let socket: any;
-    let mounted = true;
-    const authToken = localStorage.getItem('ra_token');
-
-    import('socket.io-client').then(({ io }) => {
-      if (!mounted) return;
-      socket = io(WS_URL, { transports: ['websocket', 'polling'], auth: { token: authToken }, forceNew: true });
-      socketRef.current = socket;
-      socket.on('connect', () => { socket.emit('join:stream', watching.id); });
-      if (socket.connected) socket.emit('join:stream', watching.id);
-      socket.on('chat:new', (msg: ElectionChatMessage) => {
-        setChatMessages((prev) => prev.some(m => m.id === msg.id) ? prev : [...prev, msg]);
-      });
-      socket.on('viewers:update', (data: { count: number }) => setViewerCount(data.count));
-    });
-
-    // Fetch tip balance
-    if (authToken) {
-      fetch(`${API_URL}/tips/balance`, { headers: { Authorization: `Bearer ${authToken}` } })
-        .then(r => r.json()).then(d => { setTipBalance(d.balance || 0); setTipCurrency(d.currency || 'NGN'); }).catch(() => {});
-    }
-
-    return () => {
-      mounted = false;
-      if (socket) { socket.emit('leave:stream', watching.id); socket.disconnect(); }
-      socketRef.current = null;
-    };
-  }, [watching]);
-
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chatMessages]);
-
-  const sendChat = () => {
-    if (!chatInput.trim() || !socketRef.current) return;
-    const user = JSON.parse(localStorage.getItem('ra_user') || '{}');
-    socketRef.current.emit('chat:send', { roomId: `stream:${watching.id}`, text: chatInput.trim(), userId: user.id || 'anon', username: user.username || 'Anonymous' });
-    setChatInput('');
-  };
-
-  const handleTip = async (amount: number) => {
-    if (tipBalance < amount) { alert('Insufficient balance. Buy a tip pack first.'); return; }
-    const authToken = localStorage.getItem('ra_token');
-    try {
-      const res = await fetch(`${API_URL}/tips`, { method: 'POST', headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ livestreamId: watching.id, amount }) });
-      if (res.ok) {
-        const d = await res.json();
-        setTipBalance(d.remainingBalance ?? tipBalance - amount);
-        setShowTip(false);
-        const user = JSON.parse(localStorage.getItem('ra_user') || '{}');
-        socketRef.current?.emit('chat:send', { roomId: `stream:${watching.id}`, text: `🎁 Tipped ${tipCurrency} ${amount.toLocaleString()}!`, userId: user.id, username: user.username });
-      }
-    } catch { alert('Tip failed'); }
-  };
-
-  const watchStream = async (s: any) => {
-    setWatching(s);
-    setChatMessages([]);
-    setViewerCount(0);
-    const authToken = localStorage.getItem('ra_token');
-    if (authToken) {
-      try {
-        const res = await fetch(`${API_URL}/livestream/${s.id}/viewer-token`, { headers: { Authorization: `Bearer ${authToken}` } });
-        if (res.ok) { const data = await res.json(); setViewerToken(data.token); setViewerWsUrl(data.wsUrl); }
-      } catch {}
-    }
-  };
-
-  if (watching) {
-    return (
-      <div className="flex flex-col lg:flex-row gap-4">
-        <div className="flex-1">
-          <button onClick={() => { setWatching(null); setViewerToken(null); setViewerWsUrl(null); setChatMessages([]); }} className="text-sm text-[#0F7B6C] font-medium hover:underline mb-3">← Back to streams</button>
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <StreamPlayer wsUrl={viewerWsUrl || undefined} token={viewerToken || undefined} title={watching.title} />
-            <div className="p-4">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="flex items-center gap-1 px-2 py-0.5 text-xs font-bold rounded bg-red-600 text-white">
-                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" /> LIVE
-                </span>
-                <span className="text-xs text-gray-500">{viewerCount} watching</span>
-              </div>
-              <p className="text-sm font-semibold text-gray-900">{watching.title}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                {watching.user?.displayName || 'Anonymous'}
-                {watching.electionState && ` · ${watching.electionState}`}
-                {watching.electionPollingUnit && ` · PU: ${watching.electionPollingUnit}`}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Chat Panel */}
-        <div className="w-full lg:w-80 bg-white rounded-xl border border-gray-200 flex flex-col">
-          <div className="p-3 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-900 text-sm">Live Chat</h3>
-            <p className="text-xs text-gray-500">{viewerCount} watching</p>
-          </div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 h-[250px] lg:h-[350px]">
-            {chatMessages.length === 0 && <p className="text-xs text-gray-400 text-center py-4">No messages yet</p>}
-            {chatMessages.map((msg) => (
-              <div key={msg.id} className="text-sm"><span className="font-semibold text-[#0F7B6C]">{msg.username}</span> <span className="text-gray-700">{msg.text}</span></div>
-            ))}
-            <div ref={chatEndRef} />
-          </div>
-          <div className="p-3 border-t border-gray-100">
-            {showTip && (
-              <div className="mb-2 p-2 bg-amber-50 rounded-lg">
-                <p className="text-[10px] text-amber-700 mb-1.5">Balance: {tipCurrency} {tipBalance.toLocaleString()}</p>
-                <div className="grid grid-cols-4 gap-1">
-                  {[500, 1000, 2000, 5000].map((amt) => (
-                    <button key={amt} onClick={() => handleTip(amt)} className="py-1.5 bg-white border border-amber-300 rounded text-[10px] font-semibold text-amber-800 hover:bg-amber-100">{amt.toLocaleString()}</button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="flex gap-2">
-              <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendChat()} placeholder="Type a message..." className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-[#0F7B6C]" />
-              <button onClick={() => setShowTip(!showTip)} className="px-2 py-2 bg-amber-100 text-amber-700 text-sm rounded-lg hover:bg-amber-200">💰</button>
-              <button onClick={sendChat} className="px-3 py-2 bg-[#0F7B6C] text-white text-sm rounded-lg hover:bg-[#0B6E4F]">Send</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const router = useRouter();
 
   return (
     <div className="space-y-4">
@@ -414,13 +264,14 @@ function ElectionLiveTab({ streams }: { streams: any[] }) {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {streams.map((s: any) => (
-            <div key={s.id} onClick={() => watchStream(s)}
+            <div key={s.id} onClick={() => router.push(`/live?watch=${s.id}`)}
               className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition cursor-pointer">
               <div className="relative bg-gray-900 aspect-video flex items-center justify-center">
                 <span className="text-4xl">📹</span>
                 <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-red-600 text-white text-xs font-bold rounded-full">
                   <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
                 </div>
+                <div className="absolute top-2 right-2 px-2 py-0.5 bg-purple-600 text-white text-xs font-bold rounded-full">🗳️ Election</div>
                 <div className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/60 text-white text-xs rounded-full">👁 {s.viewerCount || 0}</div>
               </div>
               <div className="p-4">
@@ -452,8 +303,6 @@ function ElectionReportForm({ election, onClose, onSubmitted }: { election: stri
   const [results, setResults] = useState<{ party: string; votes: string }[]>([{ party: '', votes: '' }]);
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [showBroadcast, setShowBroadcast] = useState(false);
-  const [broadcastConfig, setBroadcastConfig] = useState<{ ingestEndpoint: string; streamKey: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const addResultRow = () => setResults([...results, { party: '', votes: '' }]);
@@ -517,31 +366,13 @@ function ElectionReportForm({ election, onClose, onSubmitted }: { election: stri
 
   const handleGoLive = async () => {
     if (!state) { alert('Enter your state before going live'); return; }
-    const token = localStorage.getItem('ra_token');
-    if (!token) { alert('Please log in first'); return; }
-
-    setSubmitting(true);
-    try {
-      const stream = await api.livestream.create(token, {
-        title: `Election Live: ${state}${pollingUnit ? ` - PU ${pollingUnit}` : ''}`,
-        description: `Live from ${election}`,
-        electionName: election,
-        electionState: state,
-        electionPollingUnit: pollingUnit || undefined,
-      });
-      // Mark stream as live
-      await api.livestream.goLive(token, stream.id);
-      setBroadcastConfig({
-        ingestEndpoint: stream.ingestEndpoint,
-        streamKey: stream.streamKeyValue || stream.streamKey || '',
-        streamId: stream.id,
-      } as any);
-      setShowBroadcast(true);
-    } catch (err: any) {
-      alert(err.message || 'Failed to create livestream');
-    } finally {
-      setSubmitting(false);
-    }
+    // Redirect to main live page with election params
+    const params = new URLSearchParams({
+      election,
+      state,
+      ...(pollingUnit && { pollingUnit }),
+    });
+    window.location.href = `/live?${params.toString()}`;
   };
 
   return (
@@ -649,86 +480,9 @@ function ElectionReportForm({ election, onClose, onSubmitted }: { election: stri
         </button>
         <p className="text-xs text-orange-500 text-center mt-2">⚠️ Ensure livestreaming is permitted at your polling unit</p>
 
-        {/* Broadcast View */}
-        {showBroadcast && broadcastConfig && (
-          <div className="mt-4 border-t border-gray-200 pt-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">📡 Broadcasting</h3>
-              <button onClick={async () => {
-                const authToken = localStorage.getItem('ra_token');
-                if (authToken && (broadcastConfig as any)?.streamId) {
-                  try { await api.livestream.end(authToken, (broadcastConfig as any).streamId); } catch {}
-                }
-                setShowBroadcast(false); onSubmitted();
-              }}
-                className="text-xs text-red-600 font-semibold">End & Close</button>
-            </div>
-            <StreamBroadcaster config={broadcastConfig} autoPreview={true} />
-            <p className="text-xs text-green-600 text-center mt-2">✓ You are live! Viewers can see your stream in the Live tab.</p>
-            <ElectionBroadcastChat streamId={(broadcastConfig as any).streamId} />
-          </div>
-        )}
+        {/* Broadcast removed — redirects to main live page */}
       </div>
     </div>
   );
 }
 
-
-// === Election Broadcast Chat (Host Side) ===
-function ElectionBroadcastChat({ streamId }: { streamId: string }) {
-  const [chatMessages, setChatMessages] = useState<ElectionChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState('');
-  const [viewerCount, setViewerCount] = useState(0);
-  const socketRef = useRef<any>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!streamId) return;
-    let socket: any;
-    let mounted = true;
-    const authToken = localStorage.getItem('ra_token');
-
-    import('socket.io-client').then(({ io }) => {
-      if (!mounted) return;
-      socket = io(WS_URL, { transports: ['websocket', 'polling'], auth: { token: authToken }, forceNew: true });
-      socketRef.current = socket;
-      socket.on('connect', () => { socket.emit('join:stream', streamId); });
-      if (socket.connected) socket.emit('join:stream', streamId);
-      socket.on('chat:new', (msg: ElectionChatMessage) => {
-        setChatMessages((prev) => prev.some(m => m.id === msg.id) ? prev : [...prev, msg]);
-      });
-      socket.on('viewers:update', (data: { count: number }) => setViewerCount(data.count));
-    });
-
-    return () => { mounted = false; if (socket) { socket.emit('leave:stream', streamId); socket.disconnect(); } socketRef.current = null; };
-  }, [streamId]);
-
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chatMessages]);
-
-  const sendChat = () => {
-    if (!chatInput.trim() || !socketRef.current) return;
-    const user = JSON.parse(localStorage.getItem('ra_user') || '{}');
-    socketRef.current.emit('chat:send', { roomId: `stream:${streamId}`, text: chatInput.trim(), userId: user.id || 'anon', username: user.username || 'Host' });
-    setChatInput('');
-  };
-
-  return (
-    <div className="mt-3 border border-gray-200 rounded-xl overflow-hidden">
-      <div className="p-2 border-b border-gray-100 flex justify-between items-center">
-        <span className="text-xs font-semibold text-gray-700">💬 Live Chat</span>
-        <span className="text-xs text-gray-500">{viewerCount} watching</span>
-      </div>
-      <div className="h-32 overflow-y-auto p-2 space-y-1">
-        {chatMessages.length === 0 && <p className="text-xs text-gray-400 text-center py-2">No messages yet</p>}
-        {chatMessages.map((msg) => (
-          <div key={msg.id} className="text-xs"><span className="font-semibold text-[#0F7B6C]">{msg.username}</span> <span className="text-gray-700">{msg.text}</span></div>
-        ))}
-        <div ref={chatEndRef} />
-      </div>
-      <div className="p-2 border-t border-gray-100 flex gap-2">
-        <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendChat()} placeholder="Message..." className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-lg outline-none" />
-        <button onClick={sendChat} className="px-3 py-1.5 bg-[#0F7B6C] text-white text-xs rounded-lg">Send</button>
-      </div>
-    </div>
-  );
-}
