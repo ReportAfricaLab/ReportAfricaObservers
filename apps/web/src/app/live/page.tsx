@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 
@@ -21,12 +22,23 @@ interface ChatMessage {
 }
 
 export default function LivePage() {
+  return <Suspense fallback={<div className="max-w-6xl mx-auto px-4 py-20 text-center text-gray-400">Loading...</div>}><LiveContent /></Suspense>;
+}
+
+function LiveContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { token, isAuthenticated, user } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<any>(null);
+
+  // Election params from URL
+  const electionParam = searchParams.get('election');
+  const stateParam = searchParams.get('state');
+  const pollingUnitParam = searchParams.get('pollingUnit');
+  const watchParam = searchParams.get('watch');
 
   const [tab, setTab] = useState<Tab>('watching');
   const [status, setStatus] = useState<StreamStatus>('idle');
@@ -53,6 +65,22 @@ export default function LivePage() {
     );
     loadLiveStreams();
     loadRecordings();
+
+    // Handle election params - auto-fill and start preview
+    if (electionParam && stateParam) {
+      const title = `Election Live: ${stateParam}${pollingUnitParam ? ` - PU ${pollingUnitParam}` : ''}`;
+      setForm({ title, description: `Live from ${electionParam}`, category: 'election', thumbnailUrl: '' });
+      setStatus('preview');
+      setTab('go-live');
+    }
+
+    // Handle watch param - auto-start watching
+    if (watchParam && token) {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/livestream/${watchParam}`, {})
+        .then(r => r.json())
+        .then(s => { if (s && s.id) watchStream(s); })
+        .catch(() => {});
+    }
   }, []);
 
   // Socket.IO connection
@@ -134,7 +162,14 @@ export default function LivePage() {
     setLoading(true);
     setError('');
     try {
-      const stream = await api.livestream.create(token, { ...form, ...location });
+      const streamData: any = { ...form, ...location };
+      // Pass election metadata if coming from election page
+      if (electionParam) {
+        streamData.electionName = electionParam;
+        streamData.electionState = stateParam || undefined;
+        streamData.electionPollingUnit = pollingUnitParam || undefined;
+      }
+      const stream = await api.livestream.create(token, streamData);
       setStreamId(stream.id);
       setBroadcastConfig({
         ingestEndpoint: stream.ingestEndpoint,
@@ -394,6 +429,7 @@ export default function LivePage() {
                   <div className="relative bg-gray-900 aspect-video flex items-center justify-center">
                     <span className="text-white text-3xl">📹</span>
                     <div className="absolute top-2 left-2 px-2 py-0.5 bg-red-600 text-white text-xs font-bold rounded-full">LIVE</div>
+                    {s.electionName && <div className="absolute top-2 right-2 px-2 py-0.5 bg-purple-600 text-white text-xs font-bold rounded-full">🗳️ Election</div>}
                     <div className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/60 text-white text-xs rounded-full">👁 {s.viewerCount || 0}</div>
                   </div>
                   <div className="p-4">
