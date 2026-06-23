@@ -18,10 +18,9 @@ export default function AcademyHome() {
     }).catch(() => {});
   }, []);
 
-  // Calculate bundle price (sum of all * 0.6 = 40% discount)
-  const totalUsd = courses.reduce((sum, c) => sum + Number(c.usdPrice || 0), 0);
-  const bundleUsd = Math.round(totalUsd * 0.6);
-  const bundle = getLocalPrice(bundleUsd || 50, country);
+  // Bundle price fixed at $40
+  const bundleUsd = 40;
+  const bundle = getLocalPrice(bundleUsd, country);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">

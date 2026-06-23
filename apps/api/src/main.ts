@@ -114,6 +114,12 @@ async function bootstrap() {
         ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS reporter_id UUID DEFAULT NULL;
         ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS beneficiary_amount DECIMAL(12,2) DEFAULT NULL;
         ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS agreed_to_platform_fee BOOLEAN DEFAULT FALSE;
+        UPDATE courses SET usd_price=5 WHERE sort_order=1 AND usd_price!=5;
+        UPDATE courses SET usd_price=6 WHERE sort_order=2 AND usd_price!=6;
+        UPDATE courses SET usd_price=8 WHERE sort_order=3 AND usd_price!=8;
+        UPDATE courses SET usd_price=9 WHERE sort_order=4 AND usd_price!=9;
+        UPDATE courses SET usd_price=13, sort_order=6 WHERE sort_order=5 AND title LIKE '%Live%';
+        INSERT INTO courses (id, title, icon, usd_price, description, is_published, sort_order) SELECT gen_random_uuid(), 'Multimedia Storytelling & News Writing', 'W', 10, 'Learn professional news writing, interviewing, storytelling, headline creation, and audience engagement.', true, 5 WHERE NOT EXISTS (SELECT 1 FROM courses WHERE sort_order=5 AND title LIKE '%Multimedia%');
       `);
       logger.log('Startup migration: livestreams columns verified');
     } catch (err) {

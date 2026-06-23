@@ -38,10 +38,13 @@ export class DonationsService {
       throw new BadRequestException('Trust score must be at least 50 to create campaigns. Keep reporting accurately to build trust.');
     }
 
-    // Must have completed Course 3 (Investigative Journalism)
-    const enrollment = await this.campaignRepo.manager.getRepository('EnrollmentEntity').findOne({ where: { userId: authorId, courseId: this.getInvestigativeCourseId() } }) as any;
-    if (!enrollment || !enrollment.completedAt) {
-      throw new BadRequestException('You must complete the "Investigative Journalism & Emergency Reporting" course in the Academy before creating campaigns.');
+    // Must have completed Courses 1, 2, AND 3 (Investigative Journalism)
+    const courseIds = await this.getRequiredCourseIds();
+    for (const courseId of courseIds) {
+      const enrollment = await this.campaignRepo.manager.getRepository('EnrollmentEntity').findOne({ where: { userId: authorId, courseId } }) as any;
+      if (!enrollment || !enrollment.completedAt) {
+        throw new BadRequestException('You must complete Courses 1, 2, and 3 in the Academy before creating campaigns. This includes Mobile Journalism, Safety Reporting, and Investigative Journalism.');
+      }
     }
 
     // Must link to a report with evidence
@@ -88,10 +91,14 @@ export class DonationsService {
     return saved;
   }
 
-  private getInvestigativeCourseId(): string {
-    // Course 3: Investigative Journalism & Emergency Reporting
-    // This will be resolved dynamically in production
-    return 'f7879978-70d2-4f72-8002-52d99488240c';
+  private async getRequiredCourseIds(): Promise<string[]> {
+    // Courses 1, 2, and 3 are required (sorted by sort_order)
+    const courses = await this.campaignRepo.manager.getRepository('CourseEntity')
+      .createQueryBuilder('c')
+      .where('c.sort_order IN (:...orders)', { orders: [1, 2, 3] })
+      .orderBy('c.sort_order', 'ASC')
+      .getMany() as any[];
+    return courses.map((c: any) => c.id);
   }
 
   async getCampaignById(id: string): Promise<CampaignEntity> {
