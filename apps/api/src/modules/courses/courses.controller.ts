@@ -127,6 +127,16 @@ export class AdminCoursesController {
     return this.service.getAllEnrollments();
   }
 
+  @Get('analytics')
+  getAnalytics() {
+    return this.service.getAdminAnalytics();
+  }
+
+  @Get('analytics/course/:id')
+  getCourseAnalytics(@Param('id') id: string) {
+    return this.service.getCourseAnalytics(id);
+  }
+
   @Post('modules')
   createModule(@Body() dto: CreateModuleDto) {
     return this.service.createModule(dto);

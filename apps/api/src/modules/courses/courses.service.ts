@@ -303,6 +303,61 @@ export class CoursesService {
     });
   }
 
+  // === ANALYTICS ===
+
+  async getAdminAnalytics() {
+    const totalEnrollments = await this.enrollmentRepo.count();
+    const completedEnrollments = await this.enrollmentRepo.count({ where: { completedAt: new (Function.prototype.bind.apply(Date, [null] as any))() } });
+    // Use raw query for completed count since TypeORM doesn't easily filter IS NOT NULL
+    const completedResult = await this.enrollmentRepo.createQueryBuilder('e').where('e.completedAt IS NOT NULL').getCount();
+    const totalCourses = await this.courseRepo.count({ where: { isPublished: true } });
+    const totalLessons = await this.lessonRepo.count();
+
+    // Completion rate
+    const completionRate = totalEnrollments > 0 ? Math.round((completedResult / totalEnrollments) * 100) : 0;
+
+    // Recent enrollments (last 30 days)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const recentEnrollments = await this.enrollmentRepo.createQueryBuilder('e').where('e.createdAt > :date', { date: thirtyDaysAgo }).getCount();
+
+    // Quiz stats
+    const QuizAttemptRepo = this.enrollmentRepo.manager.getRepository('QuizAttemptEntity');
+    const totalAttempts = await QuizAttemptRepo.count();
+    const passedAttempts = await QuizAttemptRepo.createQueryBuilder('a').where('a.passed = true').getCount();
+    const quizPassRate = totalAttempts > 0 ? Math.round((passedAttempts / totalAttempts) * 100) : 0;
+
+    return { totalEnrollments, completedEnrollments: completedResult, completionRate, totalCourses, totalLessons, recentEnrollments, quizPassRate, totalQuizAttempts: totalAttempts };
+  }
+
+  async getCourseAnalytics(courseId: string) {
+    const course = await this.courseRepo.findOne({ where: { id: courseId }, relations: ['lessons'] });
+    if (!course) throw new NotFoundException('Course not found');
+
+    const enrollments = await this.enrollmentRepo.find({ where: { courseId }, relations: ['user'] });
+    const totalStudents = enrollments.length;
+    const completedStudents = enrollments.filter(e => e.completedAt).length;
+    const completionRate = totalStudents > 0 ? Math.round((completedStudents / totalStudents) * 100) : 0;
+
+    // Drop-off analysis: which lessons have fewest completions
+    const sortedLessons = (course.lessons || []).sort((a, b) => a.sortOrder - b.sortOrder);
+    const lessonStats = sortedLessons.map(lesson => {
+      const completedCount = enrollments.filter(e => e.completedLessons?.includes(lesson.id)).length;
+      return { lessonId: lesson.id, title: lesson.title, sortOrder: lesson.sortOrder, completedBy: completedCount, completionRate: totalStudents > 0 ? Math.round((completedCount / totalStudents) * 100) : 0 };
+    });
+
+    // Students list with progress
+    const students = enrollments.map(e => ({
+      userId: e.userId,
+      displayName: (e as any).user?.displayName || 'Unknown',
+      username: (e as any).user?.username || '',
+      progress: sortedLessons.length > 0 ? Math.round(((e.completedLessons?.length || 0) / sortedLessons.length) * 100) : 0,
+      completed: !!e.completedAt,
+      enrolledAt: e.createdAt,
+    }));
+
+    return { courseId, courseTitle: course.title, totalStudents, completedStudents, completionRate, lessonStats, students };
+  }
+
   // === MODULES ===
 
   async createModule(dto: { courseId: string; title: string; description?: string; sortOrder?: number }) {
