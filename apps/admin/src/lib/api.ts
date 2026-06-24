@@ -49,4 +49,16 @@ export const adminAPI = {
   updateLesson: (id: string, data: any) => adminFetch(`/admin/courses/lessons/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteLesson: (id: string) => adminFetch(`/admin/courses/lessons/${id}`, { method: 'DELETE' }),
   getEnrollments: () => adminFetch('/admin/courses/enrollments'),
+  // Modules
+  createModule: (data: any) => adminFetch('/admin/courses/modules', { method: 'POST', body: JSON.stringify(data) }),
+  updateModule: (id: string, data: any) => adminFetch(`/admin/courses/modules/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteModule: (id: string) => adminFetch(`/admin/courses/modules/${id}`, { method: 'DELETE' }),
+  // Quizzes
+  createQuiz: (data: any) => adminFetch('/admin/quizzes', { method: 'POST', body: JSON.stringify(data) }),
+  updateQuiz: (id: string, data: any) => adminFetch(`/admin/quizzes/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteQuiz: (id: string) => adminFetch(`/admin/quizzes/${id}`, { method: 'DELETE' }),
+  getQuizResults: (id: string) => adminFetch(`/admin/quizzes/${id}/results`),
+  // Analytics
+  getAcademyAnalytics: () => adminFetch('/admin/courses/analytics'),
+  getCourseAnalytics: (id: string) => adminFetch(`/admin/courses/analytics/course/${id}`),
 };
