@@ -70,6 +70,12 @@ export class CoursesController {
     return this.service.completeLesson(req.user.id, courseId, lessonId);
   }
 
+  @UseGuards(AuthGuard('jwt'))
+  @Get(':courseId/progress')
+  getCourseProgress(@Request() req: any, @Param('courseId') courseId: string) {
+    return this.service.getCourseProgress(req.user.id, courseId);
+  }
+
   @Get('certificates/verify/:certificateId')
   verifyCertificate(@Param('certificateId') certificateId: string) {
     return this.service.verifyCertificate(certificateId);

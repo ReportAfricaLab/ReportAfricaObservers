@@ -171,11 +171,36 @@ export class CoursesService {
     if (!enrollment) {
       enrollment = this.enrollmentRepo.create({ userId, courseId, completedLessons: [] });
     }
+
+    // Sequential unlocking: check if previous lesson is completed and quiz passed
+    const course = await this.courseRepo.findOne({ where: { id: courseId }, relations: ['lessons'] });
+    if (course && course.lessons.length > 0) {
+      const sortedLessons = course.lessons.sort((a, b) => a.sortOrder - b.sortOrder);
+      const currentIndex = sortedLessons.findIndex(l => l.id === lessonId);
+
+      if (currentIndex > 0) {
+        const prevLesson = sortedLessons[currentIndex - 1];
+        // Previous lesson must be completed
+        if (!enrollment.completedLessons.includes(prevLesson.id)) {
+          throw new BadRequestException('Complete the previous lesson first.');
+        }
+        // Check if previous lesson has a quiz that must be passed
+        const QuizRepo = this.enrollmentRepo.manager.getRepository('QuizEntity');
+        const prevQuiz = await QuizRepo.findOne({ where: { lessonId: prevLesson.id } }) as any;
+        if (prevQuiz) {
+          const AttemptRepo = this.enrollmentRepo.manager.getRepository('QuizAttemptEntity');
+          const passedAttempt = await AttemptRepo.findOne({ where: { userId, quizId: prevQuiz.id, passed: true } });
+          if (!passedAttempt) {
+            throw new BadRequestException('Pass the quiz on the previous lesson to unlock this one.');
+          }
+        }
+      }
+    }
+
     if (!enrollment.completedLessons.includes(lessonId)) {
       enrollment.completedLessons = [...enrollment.completedLessons, lessonId];
     }
     // Check if all lessons done
-    const course = await this.courseRepo.findOne({ where: { id: courseId }, relations: ['lessons'] });
     if (course && course.lessons.length > 0 && enrollment.completedLessons.length >= course.lessons.length) {
       if (!enrollment.completedAt) {
         enrollment.completedAt = new Date();
@@ -208,6 +233,54 @@ export class CoursesService {
 
   async getMyEnrollments(userId: string) {
     return this.enrollmentRepo.find({ where: { userId }, relations: ['course'], order: { createdAt: 'DESC' } });
+  }
+
+  async getCourseProgress(userId: string, courseId: string) {
+    const enrollment = await this.enrollmentRepo.findOne({ where: { userId, courseId } });
+    const course = await this.courseRepo.findOne({ where: { id: courseId }, relations: ['lessons'] });
+    if (!course) throw new NotFoundException('Course not found');
+
+    const sortedLessons = (course.lessons || []).sort((a, b) => a.sortOrder - b.sortOrder);
+    const completedLessons = enrollment?.completedLessons || [];
+
+    const QuizRepo = this.enrollmentRepo.manager.getRepository('QuizEntity');
+    const AttemptRepo = this.enrollmentRepo.manager.getRepository('QuizAttemptEntity');
+
+    const lessons = await Promise.all(sortedLessons.map(async (lesson, index) => {
+      const isCompleted = completedLessons.includes(lesson.id);
+      let isUnlocked = index === 0; // First lesson always unlocked
+
+      if (index > 0) {
+        const prevLesson = sortedLessons[index - 1];
+        const prevCompleted = completedLessons.includes(prevLesson.id);
+        if (prevCompleted) {
+          // Check if prev lesson quiz is passed
+          const prevQuiz = await QuizRepo.findOne({ where: { lessonId: prevLesson.id } }) as any;
+          if (prevQuiz) {
+            const passedAttempt = await AttemptRepo.findOne({ where: { userId, quizId: prevQuiz.id, passed: true } });
+            isUnlocked = !!passedAttempt;
+          } else {
+            isUnlocked = true;
+          }
+        }
+      }
+
+      // Check if this lesson has a quiz
+      const quiz = await QuizRepo.findOne({ where: { lessonId: lesson.id } }) as any;
+      let quizPassed = !quiz; // No quiz = auto-passed
+      if (quiz) {
+        const passedAttempt = await AttemptRepo.findOne({ where: { userId, quizId: quiz.id, passed: true } });
+        quizPassed = !!passedAttempt;
+      }
+
+      return { id: lesson.id, title: lesson.title, type: (lesson as any).type || 'video', sortOrder: lesson.sortOrder, isCompleted, isUnlocked, hasQuiz: !!quiz, quizPassed };
+    }));
+
+    const totalLessons = sortedLessons.length;
+    const completedCount = completedLessons.length;
+    const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+
+    return { courseId, totalLessons, completedCount, progressPercent, isCompleted: !!enrollment?.completedAt, certificateId: enrollment?.certificateId, lessons };
   }
 
   async verifyCertificate(certificateId: string) {
