@@ -63,15 +63,15 @@ export default function ReferralPage() {
               <div className="flex gap-2 justify-center">
                 <button onClick={handleCopy} className="px-4 py-2 bg-[#0F7B6C] text-white rounded-lg text-sm font-medium">📋 Copy Code</button>
                 <button onClick={() => {
-                  const msg = `Join ReportAfrica — Africa's citizen reporting platform! Use my referral code ${code} when you sign up. https://reportafrica-web.vercel.app/register`;
+                  const msg = `Join ReportAfrica — Africa's citizen reporting platform! Use my referral code ${code} when you sign up. https://www.reportafrica.africa/register`;
                   navigator.clipboard.writeText(msg); setMessage('Invite message copied!'); setTimeout(() => setMessage(''), 2000);
                 }} className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium">📋 Copy Invite</button>
               </div>
               <div className="flex gap-2 justify-center">
-                <a href={`https://wa.me/?text=${encodeURIComponent(`Join ReportAfrica — Africa's citizen reporting platform! Use my referral code ${code} when you sign up. https://reportafrica-web.vercel.app/register`)}`} target="_blank" className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium">WhatsApp</a>
-                <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Join @ReportAfrica! Use my referral code ${code} to sign up: https://reportafrica-web.vercel.app/register`)}`} target="_blank" className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium">𝕏</a>
+                <a href={`https://wa.me/?text=${encodeURIComponent(`Join ReportAfrica — Africa's citizen reporting platform! Use my referral code ${code} when you sign up. https://www.reportafrica.africa/register`)}`} target="_blank" className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium">WhatsApp</a>
+                <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Join @ReportAfrica! Use my referral code ${code} to sign up: https://www.reportafrica.africa/register`)}`} target="_blank" className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium">𝕏</a>
                 {typeof navigator !== 'undefined' && navigator.share && (
-                  <button onClick={() => navigator.share({ text: `Join ReportAfrica — Africa's citizen reporting platform! Use my referral code ${code} when you sign up. https://reportafrica-web.vercel.app/register` }).catch(() => {})} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">📤 More</button>
+                  <button onClick={() => navigator.share({ text: `Join ReportAfrica — Africa's citizen reporting platform! Use my referral code ${code} when you sign up. https://www.reportafrica.africa/register` }).catch(() => {})} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">📤 More</button>
                 )}
               </div>
             </>
