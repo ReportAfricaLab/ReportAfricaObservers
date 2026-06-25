@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEntity } from '../../database/entities';
 
+const ADMIN_ROLES = ['super_admin', 'admin', 'content_manager', 'finance_admin', 'support_admin', 'moderator'];
+
 @Injectable()
 export class AdminGuard implements CanActivate {
   constructor(
@@ -16,7 +18,7 @@ export class AdminGuard implements CanActivate {
     if (!userId) throw new ForbiddenException('Not authenticated');
 
     const user = await this.userRepo.findOne({ where: { id: userId } });
-    if (!user || !['admin', 'moderator'].includes(user.role)) {
+    if (!user || !ADMIN_ROLES.includes(user.role)) {
       throw new ForbiddenException('Admin access required');
     }
 

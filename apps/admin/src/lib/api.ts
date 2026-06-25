@@ -83,6 +83,13 @@ export const adminAPI = {
   // Revenue
   revenue: () => adminFetch('/admin/revenue'),
 
+  // Team
+  getTeam: () => adminFetch('/admin/team'),
+  inviteAdmin: (email: string, role: string) => adminFetch('/admin/team/invite', { method: 'POST', body: JSON.stringify({ email, role }) }),
+  changeRole: (id: string, role: string) => adminFetch(`/admin/team/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
+  revokeAccess: (id: string) => adminFetch(`/admin/team/${id}`, { method: 'DELETE' }),
+  getMe: () => adminFetch('/admin/me'),
+
   // Courses (existing)
   getCourses: () => adminFetch('/admin/courses'),
   createCourse: (data: any) => adminFetch('/admin/courses', { method: 'POST', body: JSON.stringify(data) }),

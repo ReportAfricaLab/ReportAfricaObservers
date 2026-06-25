@@ -261,4 +261,69 @@ export class AdminService {
     const totalAmountResult = await this.tipRepo.createQueryBuilder('t').select('SUM(t.amount)', 'total').getRawOne();
     return { tips, stats: { totalTips, totalAmount: Number(totalAmountResult?.total) || 0, platformRevenue: Math.round((Number(totalAmountResult?.total) || 0) * 0.1) } };
   }
+
+  // === TEAM MANAGEMENT ===
+  private static ADMIN_ROLES = ['super_admin', 'admin', 'content_manager', 'finance_admin', 'support_admin'];
+  private static CAN_INVITE = ['super_admin', 'admin'];
+
+  async getTeam() {
+    const team = await this.userRepo.find({
+      where: { role: In(AdminService.ADMIN_ROLES) },
+      select: ['id', 'email', 'username', 'displayName', 'role', 'createdAt'],
+      order: { createdAt: 'ASC' },
+    });
+    return { team };
+  }
+
+  async inviteAdmin(currentAdmin: any, email: string, role: string) {
+    if (!AdminService.CAN_INVITE.includes(currentAdmin.role)) {
+      throw new NotFoundException('You do not have permission to invite admins');
+    }
+    if (!AdminService.ADMIN_ROLES.includes(role)) {
+      throw new NotFoundException('Invalid role');
+    }
+    if (role === 'super_admin' && currentAdmin.role !== 'super_admin') {
+      throw new NotFoundException('Only super_admin can assign super_admin role');
+    }
+
+    const user = await this.userRepo.findOne({ where: { email } });
+    if (!user) throw new NotFoundException('User not found. They must register on ReportAfrica first.');
+    user.role = role;
+    await this.userRepo.save(user);
+    return { invited: true, email, role };
+  }
+
+  async changeRole(currentAdmin: any, userId: string, newRole: string) {
+    if (!AdminService.CAN_INVITE.includes(currentAdmin.role)) {
+      throw new NotFoundException('You do not have permission to change roles');
+    }
+    if (!AdminService.ADMIN_ROLES.includes(newRole)) {
+      throw new NotFoundException('Invalid role');
+    }
+    if (newRole === 'super_admin' && currentAdmin.role !== 'super_admin') {
+      throw new NotFoundException('Only super_admin can assign super_admin role');
+    }
+    if (userId === currentAdmin.id) {
+      throw new NotFoundException('Cannot change your own role');
+    }
+
+    await this.userRepo.update(userId, { role: newRole });
+    return { updated: true, userId, role: newRole };
+  }
+
+  async revokeAccess(currentAdmin: any, userId: string) {
+    if (!AdminService.CAN_INVITE.includes(currentAdmin.role)) {
+      throw new NotFoundException('You do not have permission to revoke access');
+    }
+    if (userId === currentAdmin.id) {
+      throw new NotFoundException('Cannot revoke your own access');
+    }
+    const target = await this.userRepo.findOne({ where: { id: userId } });
+    if (target?.role === 'super_admin' && currentAdmin.role !== 'super_admin') {
+      throw new NotFoundException('Cannot revoke super_admin access');
+    }
+
+    await this.userRepo.update(userId, { role: 'citizen' });
+    return { revoked: true, userId };
+  }
 }

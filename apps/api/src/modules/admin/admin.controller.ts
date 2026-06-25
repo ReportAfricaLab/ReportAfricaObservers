@@ -155,4 +155,30 @@ export class AdminController {
   getTips() {
     return this.service.getTips();
   }
+
+  // === TEAM MANAGEMENT ===
+  @Get('team')
+  getTeam() {
+    return this.service.getTeam();
+  }
+
+  @Post('team/invite')
+  inviteAdmin(@Request() req: any, @Body() body: { email: string; role: string }) {
+    return this.service.inviteAdmin(req.adminUser, body.email, body.role);
+  }
+
+  @Patch('team/:id/role')
+  changeRole(@Request() req: any, @Param('id') id: string, @Body() body: { role: string }) {
+    return this.service.changeRole(req.adminUser, id, body.role);
+  }
+
+  @Delete('team/:id')
+  revokeAccess(@Request() req: any, @Param('id') id: string) {
+    return this.service.revokeAccess(req.adminUser, id);
+  }
+
+  @Get('me')
+  getMe(@Request() req: any) {
+    return { id: req.adminUser.id, email: req.adminUser.email, username: req.adminUser.username, displayName: req.adminUser.displayName, role: req.adminUser.role };
+  }
 }
