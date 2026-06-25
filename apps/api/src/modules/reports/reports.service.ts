@@ -66,10 +66,10 @@ export class ReportsService {
       severity: dto.severity || 'medium',
       media: dto.media || [],
       verificationLevel: modResult.suggestedVerification || 'unverified',
-      aiHeadline: modResult.aiHeadline || null,
-      aiModerationScore: modResult.confidence ? Math.round(modResult.confidence * 100) : null,
-      aiFlags: modResult.flags?.length > 0 ? modResult.flags.join(',') : null,
-    });
+      aiHeadline: modResult.aiHeadline || undefined,
+      aiModerationScore: modResult.confidence ? Math.round(modResult.confidence * 100) : undefined,
+      aiFlags: modResult.flags?.length > 0 ? modResult.flags.join(',') : undefined,
+    } as any);
 
     const saved = await this.reportRepo.save(report);
 
