@@ -62,7 +62,7 @@ export class ElectionService {
       prevHash,
     } as any);
 
-    const saved = await this.electionRepo.save(report);
+    const saved = await this.electionRepo.save(report) as ElectionReportEntity;
 
     // Multi-source verification - check if other results exist for same PU
     if (dto.type === 'result_upload' && dto.pollingUnit) {
