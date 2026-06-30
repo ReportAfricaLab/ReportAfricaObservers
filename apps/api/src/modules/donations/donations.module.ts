@@ -6,12 +6,14 @@ import { DonationsController } from './donations.controller';
 import { PaystackService } from './paystack.service';
 import { PaymentsModule } from '../payments/payments.module';
 import { FraudDetectionModule } from '../fraud-detection/fraud-detection.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([CampaignEntity, DonationEntity]),
     PaymentsModule,
     FraudDetectionModule,
+    NotificationsModule,
   ],
   controllers: [DonationsController],
   providers: [DonationsService, PaystackService],

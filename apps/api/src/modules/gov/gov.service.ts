@@ -4,6 +4,7 @@ import { Repository, MoreThanOrEqual } from 'typeorm';
 import { UserEntity, ReportEntity, ElectionReportEntity, CampaignEntity } from '../../database/entities';
 import { PaystackService } from '../donations/paystack.service';
 import { KoraPayService } from '../payments/korapay.service';
+import { EmailService } from '../email/email.service';
 
 const GOV_TIERS: Record<string, { historyDays: number; canExport: boolean; label: string; usdPrice: number }> = {
   free: { historyDays: 7, canExport: false, label: 'Free', usdPrice: 0 },
@@ -21,6 +22,7 @@ export class GovService {
     @InjectRepository(CampaignEntity) private readonly campaignRepo: Repository<CampaignEntity>,
     private readonly paystackService: PaystackService,
     private readonly koraPayService: KoraPayService,
+    private readonly emailService: EmailService,
   ) {}
 
   getTierForUser(user: any): { historyDays: number; canExport: boolean; label: string } {
@@ -148,6 +150,11 @@ export class GovService {
       govJurisdictionCountry: country || 'NG',
       govJurisdictionState: state || null,
     } as any);
+
+    // Send approval email
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (user) this.emailService.sendGovApproved(user.email, user.displayName, country || 'NG', state).catch(() => {});
+
     return { approved: true, trialEnd };
   }
 
@@ -166,6 +173,11 @@ export class GovService {
       govTrialStart: new Date(),
       govTrialEnd: expires,
     } as any);
+
+    // Send access granted email
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (user) this.emailService.sendGovAccessGranted(user.email, user.displayName, tier, days).catch(() => {});
+
     return { granted: true, tier, days, expires };
   }
 

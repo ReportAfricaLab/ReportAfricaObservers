@@ -6,6 +6,7 @@ import { Cache } from 'cache-manager';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { UsersService } from '../users/users.service';
+import { EmailService } from '../email/email.service';
 
 interface RegisterDto {
   email: string;
@@ -31,6 +32,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly emailService: EmailService,
     @Optional() @Inject(CACHE_MANAGER) private readonly cache?: Cache,
   ) {
     this.refreshSecret = this.config.get('JWT_SECRET', 'dev-secret') + '-refresh';
@@ -49,6 +51,9 @@ export class AuthService {
     // Generate email verification token
     const verificationToken = crypto.randomBytes(32).toString('hex');
     await this.usersService.setEmailVerificationToken(user.id, verificationToken);
+
+    // Send verification email
+    this.emailService.sendVerificationEmail(user.email, verificationToken, dto.displayName).catch(() => {});
 
     const tokens = await this.generateTokens(user.id, user.email, user.country);
     return { user: { id: user.id, email: user.email, username: user.username, country: user.country, verificationToken }, ...tokens };
@@ -139,6 +144,9 @@ export class AuthService {
     const resetExpires = new Date(Date.now() + 3600000);
     await this.usersService.setPasswordResetToken(user.id, resetToken, resetExpires);
 
+    // Send password reset email
+    this.emailService.sendPasswordResetEmail(email, resetToken).catch(() => {});
+
     return { message: 'If that email exists, a reset link has been sent' };
   }
 
@@ -191,6 +199,9 @@ export class AuthService {
 
     const verificationToken = crypto.randomBytes(32).toString('hex');
     await this.usersService.setEmailVerificationToken(userId, verificationToken);
+
+    // Resend verification email
+    this.emailService.sendVerificationEmail(user.email, verificationToken, user.displayName).catch(() => {});
 
     return { message: 'Verification email sent', verificationToken };
   }

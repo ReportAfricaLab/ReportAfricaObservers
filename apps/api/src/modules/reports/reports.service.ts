@@ -10,6 +10,7 @@ import { TrustService } from '../trust/trust.service';
 import { FollowsService } from '../follows/follows.service';
 import { WatchlistService } from '../watchlist/watchlist.service';
 import { ReferralService } from '../referral/referral.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ReportsService {
@@ -21,6 +22,7 @@ export class ReportsService {
     private readonly followsService: FollowsService,
     private readonly watchlistService: WatchlistService,
     private readonly referralService: ReferralService,
+    private readonly notificationsService: NotificationsService,
     @Optional() @Inject(CACHE_MANAGER) private readonly cache?: Cache,
   ) {}
 
@@ -294,6 +296,16 @@ export class ReportsService {
 
     await this.reportRepo.increment({ id }, 'upvotes', 1);
     if (report.authorId) await this.trustService.addScore(report.authorId, 'report_upvoted');
+
+    // Push notification to author (don't notify on every single upvote - only milestone: 5, 10, 25, 50, 100)
+    const newCount = (report.upvotes || 0) + 1;
+    if (report.authorId && [5, 10, 25, 50, 100].includes(newCount)) {
+      this.notificationsService.sendToUser(report.authorId, {
+        title: `👍 Your report hit ${newCount} upvotes!`,
+        body: (report.title || 'Your report').substring(0, 80),
+        data: { type: 'upvote_milestone', reportId: id },
+      }).catch(() => {});
+    }
     await this.invalidateFeedCache(report.country);
 
     return this.findById(id);

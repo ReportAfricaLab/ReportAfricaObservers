@@ -7,6 +7,7 @@ import { CampaignEntity, DonationEntity } from '../../database/entities';
 import { PaystackService } from './paystack.service';
 import { KoraPayService } from '../payments/korapay.service';
 import { FraudDetectionService } from '../fraud-detection/fraud-detection.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateCampaignDto, InitiateDonationDto } from './dto/donations.dto';
 
 @Injectable()
@@ -20,6 +21,7 @@ export class DonationsService {
     private readonly koraPayService: KoraPayService,
     @Optional() private readonly fraudService?: FraudDetectionService,
     @Optional() @Inject(CACHE_MANAGER) private readonly cache?: Cache,
+    @Optional() private readonly notifications?: NotificationsService,
   ) {}
 
   // === CAMPAIGNS ===
@@ -223,6 +225,16 @@ export class DonationsService {
 
       // Check if target reached → auto-payout
       await this.checkAndPayoutCampaign(donation.campaignId);
+
+      // Push notification to campaign owner
+      const campaign = await this.campaignRepo.findOne({ where: { id: donation.campaignId } });
+      if (campaign?.authorId && this.notifications) {
+        this.notifications.sendToUser(campaign.authorId, {
+          title: '💰 New donation received!',
+          body: `Someone donated ${donation.currency} ${donation.amount} to your campaign`,
+          data: { type: 'donation', campaignId: donation.campaignId },
+        }).catch(() => {});
+      }
 
       return { status: 'success', donation };
     }

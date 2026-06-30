@@ -2,8 +2,10 @@ import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/com
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ObserverEntity } from '../../database/entities/observer.entity';
+import { UserEntity } from '../../database/entities/user.entity';
 import { PaystackService } from '../donations/paystack.service';
 import { KoraPayService } from '../payments/korapay.service';
+import { EmailService } from '../email/email.service';
 
 const TIER_CONFIG: Record<string, { price: number; seats: number }> = {
   individual: { price: 500, seats: 1 },
@@ -16,8 +18,11 @@ export class ObserverService {
   constructor(
     @InjectRepository(ObserverEntity)
     private readonly observerRepo: Repository<ObserverEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepo: Repository<UserEntity>,
     private readonly paystackService: PaystackService,
     private readonly koraPayService: KoraPayService,
+    private readonly emailService: EmailService,
   ) {}
 
   async register(userId: string, dto: { orgName?: string; country: string; tier: string; accreditationUrl: string }) {
@@ -160,7 +165,13 @@ export class ObserverService {
     const observer = await this.observerRepo.findOne({ where: { id: observerId } });
     if (!observer) throw new BadRequestException('Not found');
     observer.status = 'observer_approved';
-    return this.observerRepo.save(observer);
+    await this.observerRepo.save(observer);
+
+    // Send approval email
+    const user = await this.userRepo.findOne({ where: { id: observer.userId } });
+    if (user) this.emailService.sendObserverApproved(user.email, user.displayName, observer.tier, observer.country).catch(() => {});
+
+    return observer;
   }
 
   async reject(observerId: string) {
@@ -178,7 +189,13 @@ export class ObserverService {
     observer.paidAt = new Date();
     observer.expiresAt = new Date(Date.now() + (days || 90) * 24 * 60 * 60 * 1000);
     if (tier && TIER_CONFIG[tier]) observer.seats = TIER_CONFIG[tier].seats;
-    return this.observerRepo.save(observer);
+    await this.observerRepo.save(observer);
+
+    // Send activation email
+    const user = await this.userRepo.findOne({ where: { id: observer.userId } });
+    if (user) this.emailService.sendObserverActivated(user.email, user.displayName, observer.tier, days || 90, observer.expiresAt.toISOString()).catch(() => {});
+
+    return observer;
   }
 
   async getAllActive() {

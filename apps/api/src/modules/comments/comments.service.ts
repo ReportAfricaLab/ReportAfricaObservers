@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CommentEntity, ReportEntity } from '../../database/entities';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class CommentsService {
@@ -12,6 +13,7 @@ export class CommentsService {
     @InjectRepository(ReportEntity)
     private readonly reportRepo: Repository<ReportEntity>,
     private readonly realtime: RealtimeGateway,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async create(userId: string, dto: { reportId: string; text: string; parentId?: string }) {
@@ -38,6 +40,15 @@ export class CommentsService {
         type: 'comment:new',
         comment: { id: full.id, text: full.text, userId: full.userId, username: full.user?.username, createdAt: full.createdAt, parentId: full.parentId },
       });
+    }
+
+    // Push notification to report author
+    if (report.authorId && report.authorId !== userId) {
+      this.notifications.sendToUser(report.authorId, {
+        title: '💬 New comment on your report',
+        body: dto.text.substring(0, 100),
+        data: { type: 'comment', reportId: dto.reportId },
+      }).catch(() => {});
     }
 
     return full || saved;
