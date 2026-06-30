@@ -23,7 +23,7 @@ export default function GovShell({ children }: { children: React.ReactNode }) {
   const [govUser, setGovUser] = useState<any>(null);
 
   useEffect(() => {
-    if (pathname === '/login') { setAuthed(true); return; }
+    if (pathname === '/login' || pathname === '/subscribe') { setAuthed(true); return; }
     const token = localStorage.getItem('gov_token');
     if (!token) { router.replace('/login'); return; }
 
@@ -33,6 +33,8 @@ export default function GovShell({ children }: { children: React.ReactNode }) {
       .then(r => r.json())
       .then(data => {
         if (!data.isGov) { localStorage.removeItem('gov_token'); router.replace('/login'); return; }
+        // Check if trial expired and no active subscription
+        if (!data.trialActive && data.role === 'gov_agency') { router.replace('/subscribe'); return; }
         setGovUser(data);
         setAuthed(true);
       })
@@ -45,7 +47,7 @@ export default function GovShell({ children }: { children: React.ReactNode }) {
   };
 
   if (!authed) return null;
-  if (pathname === '/login') return <>{children}</>;
+  if (pathname === '/login' || pathname === '/subscribe') return <>{children}</>;
 
   // Pass jurisdiction to pages via data attribute
   const jurisdiction = govUser?.jurisdiction || { country: 'NG', state: '' };
@@ -73,8 +75,13 @@ export default function GovShell({ children }: { children: React.ReactNode }) {
           </select>
         )}
         {govUser?.trialActive && govUser?.trialDaysLeft != null && (
-          <div className="mb-3 px-2 py-1.5 bg-amber-900/30 border border-amber-700/30 rounded text-[10px] text-amber-400">
-            🕐 Trial: {govUser.trialDaysLeft} days left
+          <div className="mb-3">
+            <div className="px-2 py-1.5 bg-amber-900/30 border border-amber-700/30 rounded text-[10px] text-amber-400">
+              🕐 Trial: {govUser.trialDaysLeft} days left
+            </div>
+            <a href="/subscribe" className="block mt-1.5 px-2 py-1.5 bg-blue-600/20 border border-blue-700/30 rounded text-[10px] text-blue-400 text-center hover:bg-blue-600/30 transition">
+              ⬆️ Upgrade Plan
+            </a>
           </div>
         )}
         {/* Date range filter */}
